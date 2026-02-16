@@ -1,0 +1,19 @@
+{
+  "name": "Nappollen.UdonPoster.Runtime",
+  "rootNamespace": "Nappollen.UdonPoster",
+  "references": [
+    "UdonSharp.Runtime",
+    "Unity.TextMeshPro",
+    "VRC.Udon.Serialization.OdinSerializer"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
+
