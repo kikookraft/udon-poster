@@ -5,9 +5,6 @@ on:
     branches:
       - images      # Déclenche sur les commits de la branche images (contient les images sources)
       - main        # Déclenche aussi sur main pour les mises à jour du workflow
-    paths:
-      - 'images/**'  # Surveille les changements dans le dossier images
-      - '.github/workflows/generate-atlas.yml'
   workflow_dispatch:  # Permet de déclencher manuellement
 
 # Définir les permissions nécessaires pour GitHub Pages
@@ -26,10 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
+      - name: Checkout main branch (code)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Récupère tout l'historique
+          ref: main
+          path: main
+      
+      - name: Checkout images branch (images sources)
+        uses: actions/checkout@v4
+        with:
+          ref: images
+          path: images
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,19 +43,15 @@ jobs:
       
       - name: Install Python dependencies
         run: |
-          cd Packages/nappollen.udon-poster/Generator
+          cd main/Generator
           pip install -r requirements.txt
       
       - name: Check for source images
         id: check_images
         run: |
-          cd Packages/nappollen.udon-poster/Generator/CI
-          chmod +x check_images.sh
-          OUTPUT=$(./check_images.sh)
-          
-          if echo "$OUTPUT" | grep -q "images_exist=true"; then
+          if [ -d "images" ] && [ "$(ls -A images 2>/dev/null | grep -v '.git' | grep -v 'README')" ]; then
             echo "images_exist=true" >> $GITHUB_OUTPUT
-          else
+            echo "✅ Dossier images trouvé avec des fichiers"
             echo "images_exist=false" >> $GITHUB_OUTPUT
           fi
           
@@ -59,28 +60,28 @@ jobs:
       - name: Generate atlases from source images
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
-          cd Packages/nappollen.udon-poster/Generator
+          cd Generator
           
           echo "🎨 Génération des atlas à partir des images sources..."
-          python CI/generate_atlas_ci.py generate --input ../../../images --output output_atlases
+          python CI/generate_atlas_ci.py generate --input ../images --output output_atlases
       
       - name: Generate static version
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
-          cd Packages/nappollen.udon-poster/Generator
+          cd main/main/Generator
           
-          echo "📦 Génération de la version statique pour GitHub Pages..."
-          python CI/generate_atlas_ci.py static --output output_atlases --static-output output_static
+          echo "🎨 Génération des atlas à partir des images sources..."
+          python CI/generate_atlas_ci.py generate --input ../utput_atlases --static-output output_static
       
       - name: Create empty atlas (fallback)
         if: steps.check_images.outputs.images_exist == 'false'
         run: |
-          cd Packages/nappollen.udon-poster/Generator
+          cd main/Generator
           python CI/create_index.py empty-atlas --output output_static
       
       - name: Create index.html for GitHub Pages
         run: |
-          cd Packages/nappollen.udon-poster/Generator
+          cd main/Generator
           python CI/create_index.py create-index --output output_static
       
       - name: Setup Pages
@@ -89,7 +90,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'Packages/nappollen.udon-poster/Generator/output_static'
+          path: 'main/Generator/output_static'
       
       - name: Deploy to GitHub Pages
         id: deployment

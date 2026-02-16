@@ -132,7 +132,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Génération d\'atlas pour CI/CD')
     parser.add_argument('command', choices=['generate', 'static'], 
                        help='Commande à exécuter')
-    parser.add_argument('--input', default='../../../images',
+    parser.add_argument('--input', default='../images',
                        help='Dossier des images sources')
     parser.add_argument('--output', default='output_atlases',
                        help='Dossier de sortie des atlas')

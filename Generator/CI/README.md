@@ -8,8 +8,8 @@ Ce dossier contient les scripts utilisés par le workflow GitHub Actions pour g�
 Script principal pour générer les atlas dans le contexte CI/CD.
 
 **Commandes:**
-- `python generate_atlas_ci.py generate --input ../../../images --output output_atlases`
-  - Génère les atlas à partir des images sources
+- `python generate_atlas_ci.py generate --input ../images --output output_atlases`
+  - Génère les atlas à partir des images sources (dossier images/ à la racine du repo)
 - `python generate_atlas_ci.py static --output output_atlases --static-output output_static`
   - Génère la version statique pour GitHub Pages
 
@@ -55,14 +55,20 @@ Le workflow:
 ## Structure des dossiers
 
 ```
-Generator/
-├── CI/                          # Scripts CI (ce dossier)
-│   ├── generate_atlas_ci.py
-│   ├── create_index.py
-│   ├── check_images.sh
-│   ├── ci_utils.py
+/                                # Racine du repository
+├── images/                      # Dossier des images sources
 │   └── README.md
-├── generate_posters.py          # Générateur d'atlas principal
-├── generate_static.py           # Générateur de version statique
-└── requirements.txt             # Dépendances Python
+├── Generator/
+│   ├── CI/                      # Scripts CI (ce dossier)
+│   │   ├── generate_atlas_ci.py
+│   │   ├── create_index.py
+│   │   ├── check_images.sh
+│   │   ├── ci_utils.py
+│   │   └── README.md
+│   ├── generate_posters.py      # Générateur d'atlas principal
+│   ├── generate_static.py       # Générateur de version statique
+│   └── requirements.txt         # Dépendances Python
+└── .github/
+    └── workflows/
+        └── generate-atlas.yml   # Workflow GitHub Actions
 ```
