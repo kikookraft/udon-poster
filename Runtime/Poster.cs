@@ -11,6 +11,8 @@ using VRC.SDKBase;
 
 namespace Nappollen.UdonPoster {
 	public class Poster : UdonSharpBehaviour {
+		public string key;
+		
 		public Animator animator;
 		public RawImage image;
 		public AspectRatioFitter aspect;

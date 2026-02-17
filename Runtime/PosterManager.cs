@@ -83,10 +83,69 @@ namespace Nappollen.UdonPoster {
 				return;
 			}
 
-			for (var i = 0; i < posters.Length; i++)
-				posters[i].OnMetadataLoaded(this, data, i);
+			// Get mapping from metadata
+			var mapping = data.TryGetValue("mapping", TokenType.DataList, out var d0)
+				? d0.DataList
+				: new DataList();
+
+			// Assign images to posters based on key groups
+			AssignImagesToPostersByKey(data, mapping);
 
 			NextUrl();
+		}
+
+		private void AssignImagesToPostersByKey(DataDictionary data, DataList mapping) {
+			if (data == null || mapping == null || posters == null || posters.Length == 0)
+				return;
+
+			// Track which posters have been assigned
+			var assignedPosters = new bool[posters.Length];
+
+			// Process each image in mapping
+			for (var imageIndex = 0; imageIndex < mapping.Count; imageIndex++) {
+				var item = mapping[imageIndex].DataDictionary;
+				if (item == null)
+					continue;
+
+				// Get the key from the image metadata
+				var imageKey = item.TryGetValue("key", TokenType.String, out var keyToken)
+					? keyToken.String
+					: null;
+
+				// Normalize empty key to null
+				if (string.IsNullOrEmpty(imageKey))
+					imageKey = null;
+
+				// Find the first available poster in the same group
+				var assignedPosterIndex = -1;
+				for (var posterIndex = 0; posterIndex < posters.Length; posterIndex++) {
+					if (assignedPosters[posterIndex])
+						continue; // This poster already has an image
+
+					var poster = posters[posterIndex];
+					var posterKey = poster.key;
+
+					// Normalize empty key to null
+					if (string.IsNullOrEmpty(posterKey))
+						posterKey = null;
+
+					// Check if keys match (both null or both equal)
+					var keysMatch = (imageKey == null && posterKey == null) ||
+					                (imageKey != null && posterKey != null && imageKey == posterKey);
+
+					if (keysMatch) {
+						assignedPosterIndex = posterIndex;
+						break;
+					}
+				}
+
+				// If we found a matching poster, assign the image
+				if (assignedPosterIndex >= 0) {
+					assignedPosters[assignedPosterIndex] = true;
+					posters[assignedPosterIndex].OnMetadataLoaded(this, data, imageIndex);
+				}
+				// Otherwise, ignore the image (no available poster in the group)
+			}
 		}
 
 		private void NextUrl() {

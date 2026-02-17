@@ -1,38 +1,46 @@
 {
-    "name": "nappollen.udon-poster",
-    "version": "1.0.2",
-    "displayName": "Nappollen Udon Poster",
-    "description": "A Unity package for managing dynamic poster displays in VRChat worlds using Udon Sharp. Features texture atlas support, web API integration, and automated content management tools.",
-    "unity": "2022.3",
-    "readme": "README.md",
-    "license": "MIT",
-    "url": "https://github.com/nappollen/udon-poster",
-    "author": {
-        "name": "Nappollen"
-    },
-    "bugs": {
-        "url": "https://github.com/nappollen/udon-poster/issues"
-    },
-    "vpmDependencies": {
-        "com.vrchat.worlds": "^3.8.2",
-        "com.vrchat.base": "^3.8.2"
-    },
-    "dependencies": {
-        "com.unity.modules.ui": "1.0.0",
-        "com.unity.textmeshpro": "2.1.6"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/nappollen/udon-poster.git"
-    },
-    "keywords": [
-        "VRChat",
-        "Udon",
-        "UdonSharp",
-        "Posters",
-        "Dynamic Content",
-        "Texture Atlas",
-        "Image Loading",
-        "VRC SDK3"
-    ]
+  "name": "nappollen.udon-poster",
+  "version": "1.0.3",
+  "displayName": "Nappollen Udon Poster",
+  "description": "A Unity package for managing dynamic poster displays in VRChat worlds using Udon Sharp. Features texture atlas support, web API integration, and automated content management tools.",
+  "unity": "2022.3",
+  "readme": "README.md",
+  "changeLog": "CHANGELOG.md",
+  "license": "MIT",
+  "url": "https://github.com/nappollen/udon-poster",
+  "author": {
+    "name": "Nappollen"
+  },
+  "bugs": {
+    "url": "https://github.com/nappollen/udon-poster/issues"
+  },
+  "vpmDependencies": {
+    "com.vrchat.worlds": "^3.8.2",
+    "com.vrchat.base": "^3.8.2"
+  },
+  "dependencies": {
+    "com.unity.modules.ui": "1.0.0",
+    "com.unity.textmeshpro": "2.1.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nappollen/udon-poster.git"
+  },
+  "samples": [
+    {
+      "displayName": "Example Scene",
+      "description": "Example scene demonstrating the Udon Poster system with sample posters and configurations",
+      "path": "Assets"
+    }
+  ],
+  "keywords": [
+    "VRChat",
+    "Udon",
+    "UdonSharp",
+    "Posters",
+    "Dynamic Content",
+    "Texture Atlas",
+    "Image Loading",
+    "VRC SDK3"
+  ]
 }
