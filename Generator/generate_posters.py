@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw
 from typing import List, Tuple, Dict, Any
 
 class Rectangle:
-    """Représente un rectangle avec position et dimensions"""
+    """Represents a rectangle with position and dimensions"""
     def __init__(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
         self.x = x
         self.y = y
@@ -14,15 +14,15 @@ class Rectangle:
         self.height = height
     
     def fits_in(self, other: 'Rectangle') -> bool:
-        """Vérifie si ce rectangle peut s'adapter dans un autre"""
+        """Checks if this rectangle can fit in another"""
         return self.width <= other.width and self.height <= other.height
     
     def contains_point(self, x: int, y: int) -> bool:
-        """Vérifie si un point est dans ce rectangle"""
+        """Checks if a point is in this rectangle"""
         return self.x <= x < self.x + self.width and self.y <= y < self.y + self.height
 
 class BinPacker:
-    """Algorithme de bin packing optimisé pour les atlas"""
+    """Optimized bin packing algorithm for atlases"""
     
     def __init__(self, width: int, height: int, placement_strategy: str = 'best_area_fit'):
         self.width = width
@@ -32,11 +32,11 @@ class BinPacker:
         self.used_rectangles = []
     
     def insert(self, width: int, height: int) -> Rectangle:
-        """Insère un rectangle et retourne sa position, ou None si impossible"""
+        """Inserts a rectangle and returns its position, or None if impossible"""
         best_rect = None
         
         if self.placement_strategy == 'best_area_fit':
-            # Minimise l'espace perdu
+            # Minimize wasted space
             best_area_fit = float('inf')
             best_short_side_fit = float('inf')
             
@@ -53,7 +53,7 @@ class BinPacker:
                         best_short_side_fit = short_side_fit
         
         elif self.placement_strategy == 'best_short_side_fit':
-            # Minimise le plus petit côté restant
+            # Minimize the smallest remaining side
             best_short_side_fit = float('inf')
             best_long_side_fit = float('inf')
             
@@ -70,7 +70,7 @@ class BinPacker:
                         best_long_side_fit = long_side_fit
         
         elif self.placement_strategy == 'best_long_side_fit':
-            # Minimise le plus grand côté restant
+            # Minimize the largest remaining side
             best_long_side_fit = float('inf')
             best_short_side_fit = float('inf')
             
@@ -87,7 +87,7 @@ class BinPacker:
                         best_short_side_fit = short_side_fit
         
         elif self.placement_strategy == 'bottom_left':
-            # Place en bas à gauche (plus petits y puis x)
+            # Place at bottom left (smallest y then x)
             best_y = float('inf')
             best_x = float('inf')
             
@@ -99,25 +99,25 @@ class BinPacker:
                         best_x = rect.x
         
         elif self.placement_strategy == 'contact_point':
-            # Maximise le contact avec les rectangles déjà placés
+            # Maximize contact with already placed rectangles
             best_contact = -1
             best_area_fit = float('inf')
             
             for rect in self.free_rectangles:
                 if rect.width >= width and rect.height >= height:
                     contact = 0
-                    # Compter les points de contact
+                    # Count contact points
                     if rect.x == 0:
-                        contact += height  # Contact avec le bord gauche
+                        contact += height  # Contact with left edge
                     if rect.y == 0:
-                        contact += width   # Contact avec le bord haut
+                        contact += width   # Contact with top edge
                     
-                    # Vérifier contact avec autres rectangles
+                    # Check contact with other rectangles
                     for used in self.used_rectangles:
-                        # Contact à droite
+                        # Contact on the right
                         if used.x + used.width == rect.x and not (rect.y + height <= used.y or rect.y >= used.y + used.height):
                             contact += min(height, used.height)
-                        # Contact en bas
+                        # Contact at bottom
                         if used.y + used.height == rect.y and not (rect.x + width <= used.x or rect.x >= used.x + used.width):
                             contact += min(width, used.width)
                     
@@ -135,7 +135,7 @@ class BinPacker:
         return best_rect
     
     def _split_free_rectangle(self, used_rect: Rectangle):
-        """Divise les rectangles libres après insertion"""
+        """Splits free rectangles after insertion"""
         rectangles_to_process = self.free_rectangles[:]
         self.free_rectangles = []
         
@@ -147,31 +147,31 @@ class BinPacker:
         self._prune_free_rectangles()
     
     def _split_rectangle(self, rect: Rectangle, used_rect: Rectangle) -> bool:
-        """Divise un rectangle libre si il overlap avec le rectangle utilisé"""
+        """Splits a free rectangle if it overlaps with the used rectangle"""
         if (rect.x >= used_rect.x + used_rect.width or 
             rect.x + rect.width <= used_rect.x or
             rect.y >= used_rect.y + used_rect.height or
             rect.y + rect.height <= used_rect.y):
             return False
         
-        # Rectangle à droite
+        # Rectangle on the right
         if rect.x < used_rect.x + used_rect.width and rect.x + rect.width > used_rect.x + used_rect.width:
             new_rect = Rectangle(used_rect.x + used_rect.width, rect.y, 
                                rect.x + rect.width - (used_rect.x + used_rect.width), rect.height)
             self.free_rectangles.append(new_rect)
         
-        # Rectangle à gauche
+        # Rectangle on the left
         if rect.x < used_rect.x and rect.x + rect.width > used_rect.x:
             new_rect = Rectangle(rect.x, rect.y, used_rect.x - rect.x, rect.height)
             self.free_rectangles.append(new_rect)
         
-        # Rectangle en bas
+        # Rectangle at bottom
         if rect.y < used_rect.y + used_rect.height and rect.y + rect.height > used_rect.y + used_rect.height:
             new_rect = Rectangle(rect.x, used_rect.y + used_rect.height, 
                                rect.width, rect.y + rect.height - (used_rect.y + used_rect.height))
             self.free_rectangles.append(new_rect)
         
-        # Rectangle en haut
+        # Rectangle at top
         if rect.y < used_rect.y and rect.y + rect.height > used_rect.y:
             new_rect = Rectangle(rect.x, rect.y, rect.width, used_rect.y - rect.y)
             self.free_rectangles.append(new_rect)
@@ -179,7 +179,7 @@ class BinPacker:
         return True
     
     def _prune_free_rectangles(self):
-        """Supprime les rectangles redondants"""
+        """Removes redundant rectangles"""
         i = 0
         while i < len(self.free_rectangles):
             j = i + 1
@@ -206,20 +206,20 @@ class AtlasGenerator:
         self.max_atlas_size = max_atlas_size
         self.input_folder = input_folder or "input_images"
         self.output_folder = output_folder or "output_atlases"
-        self.padding = padding  # Espacement entre les images pour éviter les artefacts
-        self.max_image_size = max_image_size if max_image_size is not None else max_atlas_size  # Résolution max des images avant traitement
+        self.padding = padding  # Spacing between images to avoid artifacts
+        self.max_image_size = max_image_size if max_image_size is not None else max_atlas_size  # Max image resolution before processing
         
-        # Créer le dossier de sortie s'il n'existe pas
+        # Create output folder if it doesn't exist
         os.makedirs(self.output_folder, exist_ok=True)
     
     def resize_image_if_needed(self, image: Image.Image) -> Image.Image:
-        """Redimensionne l'image si elle dépasse 2048x2048 en gardant le ratio"""
+        """Resizes image if it exceeds 2048x2048 while maintaining ratio"""
         width, height = image.size
         
         if width <= self.max_atlas_size and height <= self.max_atlas_size:
             return image
         
-        # Calculer le ratio de redimensionnement
+        # Calculate resize ratio
         ratio = min(self.max_atlas_size / width, self.max_atlas_size / height)
         new_width = int(width * ratio)
         new_height = int(height * ratio)
@@ -227,7 +227,7 @@ class AtlasGenerator:
         return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
     
     def downscale_image(self, image: Image.Image, scale_factor: int) -> Image.Image:
-        """Downscale l'image par un multiple de 2"""
+        """Downscales image by a multiple of 2"""
         width, height = image.size
         new_width = width // scale_factor
         new_height = height // scale_factor
@@ -239,17 +239,17 @@ class AtlasGenerator:
         return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
     
     def _sort_images(self, images: List[Tuple[str, Image.Image]], sort_strategy: str) -> List[Tuple[str, Image.Image]]:
-        """Trie les images selon la stratégie donnée
+        """Sorts images according to the given strategy
         
         Args:
-            images: Liste des images à trier
-            sort_strategy: Stratégie de tri
+            images: List of images to sort
+            sort_strategy: Sort strategy
             
         Returns:
-            Liste d'images triées
+            Sorted list of images
         """
         if sort_strategy == 'none':
-            # Pas de tri, garder l'ordre existant
+            # No sorting, keep existing order
             return images[:]
         elif sort_strategy == 'area':
             return sorted(images, key=lambda x: x[1].size[0] * x[1].size[1], reverse=True)
@@ -290,28 +290,28 @@ class AtlasGenerator:
             return images[:]
     
     def pack_images_in_atlas(self, images: List[Tuple[str, Image.Image]], sort_strategy: str = 'area', placement_strategy: str = 'best_area_fit') -> Tuple[Image.Image, Dict[str, Dict[str, float]]]:
-        """Pack les images dans un atlas en utilisant un algorithme optimisé
+        """Packs images into an atlas using an optimized algorithm
         
         Args:
-            images: Liste de tuples (filename, Image)
-            sort_strategy: Stratégie de tri (area, height, width, etc.)
-            placement_strategy: Stratégie de placement (best_area_fit, best_short_side_fit, best_long_side_fit, bottom_left, contact_point)
+            images: List of tuples (filename, Image)
+            sort_strategy: Sort strategy (area, height, width, etc.)
+            placement_strategy: Placement strategy (best_area_fit, best_short_side_fit, best_long_side_fit, bottom_left, contact_point)
         """
         if not images:
             return None, {}
         
-        # Trier les images selon la stratégie
+        # Sort images according to strategy
         sorted_images = self._sort_images(images, sort_strategy)
         
-        # Créer l'atlas
+        # Create atlas
         atlas_width = self.max_atlas_size
         atlas_height = self.max_atlas_size
         atlas = Image.new('RGBA', (atlas_width, atlas_height), (0, 0, 0, 0))
         
-        # Initialiser le bin packer avec la stratégie de placement
+        # Initialize bin packer with placement strategy
         packer = BinPacker(atlas_width, atlas_height, placement_strategy)
         
-        # Coordonnées UV pour chaque image
+        # UV coordinates for each image
         uv_coords = {}
         max_right = 0
         max_bottom = 0
@@ -319,21 +319,21 @@ class AtlasGenerator:
         for filename, img in sorted_images:
             img_width, img_height = img.size
             
-            # Ajouter le padding aux dimensions
+            # Add padding to dimensions
             padded_width = img_width + self.padding * 2
             padded_height = img_height + self.padding * 2
             
-            # Essayer de placer l'image dans l'atlas
+            # Try to place image in atlas
             rect = packer.insert(padded_width, padded_height)
             
             if rect is None:
-                # Plus d'espace dans cet atlas
+                # No more space in this atlas
                 break
             
-            # Placer l'image dans l'atlas (avec offset du padding)
+            # Place image in atlas (with padding offset)
             atlas.paste(img, (rect.x + self.padding, rect.y + self.padding))
             
-            # Calculer les coordonnées UV (coordonnées réelles de l'image, sans padding)
+            # Calculate UV coordinates (actual image coordinates, without padding)
             uv_coords[filename] = {
                 'x': rect.x + self.padding,
                 'y': rect.y + self.padding,
@@ -341,27 +341,27 @@ class AtlasGenerator:
                 'height': img_height
             }
             
-            # Suivre les dimensions maximales utilisées
+            # Track maximum used dimensions
             max_right = max(max_right, rect.x + rect.width)
             max_bottom = max(max_bottom, rect.y + rect.height)
         
-        # Redimensionner l'atlas pour éliminer les marges vides
+        # Resize atlas to eliminate empty margins
         if max_right > 0 and max_bottom > 0:
-            # S'assurer que les dimensions sont au moins 1x1
+            # Ensure dimensions are at least 1x1
             actual_width = max(1, max_right)
             actual_height = max(1, max_bottom)
             
-            # Crop l'atlas aux dimensions réellement utilisées
+            # Crop atlas to actually used dimensions
             atlas = atlas.crop((0, 0, actual_width, actual_height))
             
-            # Calculer les coordonnées UV avec les nouvelles dimensions (compatibles Unity)
+            # Calculate UV coordinates with new dimensions (Unity compatible)
             for filename in uv_coords:
                 coord = uv_coords[filename]
-                # Unity utilise l'origine en bas à gauche, donc on inverse l'axe Y
+                # Unity uses origin at bottom left, so invert Y axis
                 uv_coords[filename] = {
                     'width': coord['width'],
                     'height': coord['height'],
-                    # Ajouter les coordonnées pour Unity Rect (x, y, width, height normalisées)
+                    # Add coordinates for Unity Rect (x, y, width, height normalized)
                     'rect_x': coord['x'] / actual_width,
                     'rect_y': 1.0 - (coord['y'] + coord['height']) / actual_height,
                     'rect_width': coord['width'] / actual_width,
@@ -371,10 +371,10 @@ class AtlasGenerator:
         return atlas, uv_coords
     
     def evaluate_atlas_configuration(self, atlas_list: List[Dict]) -> Dict[str, Any]:
-        """Évalue la qualité d'une configuration d'atlas
+        """Evaluates the quality of an atlas configuration
         
         Returns:
-            dict: Score avec nombre d'atlas, taille totale et efficacité
+            dict: Score with number of atlases, total size and efficiency
         """
         total_atlas_area = sum(a['width'] * a['height'] for a in atlas_list)
         total_image_area = sum(
@@ -382,7 +382,7 @@ class AtlasGenerator:
             for a in atlas_list
         )
         
-        # Calculer l'espace réservé au padding (padding * 2 par image sur chaque axe)
+        # Calculate space reserved for padding (padding * 2 per image on each axis)
         total_padding_area = sum(
             sum(
                 (uv['width'] + self.padding * 2) * (uv['height'] + self.padding * 2) - uv['width'] * uv['height']
@@ -391,8 +391,8 @@ class AtlasGenerator:
             for a in atlas_list
         )
         
-        # Efficacité = surface images + padding / surface totale
-        # Le padding est nécessaire donc on le compte comme "utilisé"
+        # Efficiency = images surface + padding / total surface
+        # Padding is necessary so we count it as "used"
         used_area = total_image_area + total_padding_area
         efficiency = (used_area / total_atlas_area * 100) if total_atlas_area > 0 else 0
         
@@ -407,16 +407,16 @@ class AtlasGenerator:
     def test_packing_configuration(self, images: List[Tuple[str, Image.Image]], 
                                    atlas_size: int, sort_strategy: str, 
                                    reoptimize_each_atlas: bool = True) -> List[Dict]:
-        """Teste une configuration spécifique de packing
+        """Tests a specific packing configuration
         
         Args:
-            images: Images à packer
-            atlas_size: Taille max de l'atlas
-            sort_strategy: Stratégie de tri
-            reoptimize_each_atlas: Si True, réoptimise le tri pour chaque nouvel atlas
+            images: Images to pack
+            atlas_size: Max atlas size
+            sort_strategy: Sort strategy
+            reoptimize_each_atlas: If True, re-optimize sorting for each new atlas
         
         Returns:
-            list: Liste des atlas générés pour cette configuration
+            list: List of atlases generated for this configuration
         """
         # Sauvegarder la taille d'atlas actuelle
         original_size = self.max_atlas_size
@@ -427,11 +427,11 @@ class AtlasGenerator:
         atlas_index = 0
         
         while remaining_images:
-            # Réoptimiser le tri pour les images restantes (si activé)
+            # Re-optimize sorting for remaining images (if enabled)
             if reoptimize_each_atlas:
                 atlas, uv_coords = self.pack_images_in_atlas(remaining_images, sort_strategy)
             else:
-                # Mode classique: un seul tri au début
+                # Classic mode: one sort at the beginning
                 if atlas_index == 0:
                     sorted_remaining = self._sort_images(remaining_images, sort_strategy)
                 atlas, uv_coords = self.pack_images_in_atlas(sorted_remaining if not reoptimize_each_atlas else remaining_images, sort_strategy)
@@ -447,47 +447,47 @@ class AtlasGenerator:
                 'count': len(uv_coords)
             })
             
-            # Retirer les images traitées
+            # Remove processed images
             processed_filenames = set(uv_coords.keys())
             remaining_images = [(name, img) for name, img in remaining_images 
                               if name not in processed_filenames]
             
             atlas_index += 1
             
-            # Sécurité
+            # Safety check
             if atlas_index > 100:
                 break
         
-        # Restaurer la taille originale
+        # Restore original size
         self.max_atlas_size = original_size
         
         return atlases
     
     def find_best_single_atlas(self, images: List[Tuple[str, Image.Image]], use_random: bool = True, permutations_per_config: int = 5) -> Dict[str, Any]:
-        """Trouve la meilleure configuration pour générer UN SEUL atlas avec les images données
+        """Finds the best configuration to generate A SINGLE atlas with the given images
         
         Args:
-            images: Images à packer
-            use_random: Utiliser aussi des permutations aléatoires
-            permutations_per_config: Nombre de permutations aléatoires par configuration
+            images: Images to pack
+            use_random: Also use random permutations
+            permutations_per_config: Number of random permutations per configuration
             
         Returns:
-            dict: Meilleur atlas avec sa configuration ou None
+            dict: Best atlas with its configuration or None
         """
         if not images:
             return None
         
-        # Vérifier si les images sont trop grandes pour rentrer dans un atlas
+        # Check if images are too large to fit in an atlas
         max_img_width = max(img.size[0] for _, img in images)
         max_img_height = max(img.size[1] for _, img in images)
         
         if max_img_width + self.padding * 2 > 2048 or max_img_height + self.padding * 2 > 2048:
-            print(f"  ⚠️ Images trop grandes (max: {max_img_width}x{max_img_height}), impossible de packer")
+            print(f"  ⚠️ Images too large (max: {max_img_width}x{max_img_height}), impossible to pack")
             return None
         
         import random
         
-        # Configurations à tester
+        # Configurations to test
         atlas_sizes = [2048, 1536, 1024]
         sort_strategies = ['area', 'height', 'width', 'perimeter', 'max_side', 
                           'min_side', 'ratio', 'ratio_inv', 'diagonal', 
@@ -500,11 +500,11 @@ class AtlasGenerator:
         
         configs_tested = 0
         
-        # Tester toutes les combinaisons placement × tri
+        # Test all combinations placement × sort
         for atlas_size in atlas_sizes:
             for placement_strategy in placement_strategies:
                 for sort_strategy in sort_strategies:
-                    # Pour chaque config, tester l'ordre déterministe
+                    # For each config, test deterministic order
                     configs_tested += 1
                     
                     original_size = self.max_atlas_size
@@ -553,9 +553,9 @@ class AtlasGenerator:
                             }
                             best_score = score
                 
-                # Permutations pour cette combinaison placement + tri (limité pour éviter l'explosion)
+                # Permutations for this combination placement + sort (limited to avoid explosion)
                 if permutations_per_config > 0:
-                    for perm_idx in range(min(2, permutations_per_config)):  # Seulement 2 permutations par combo
+                    for perm_idx in range(min(2, permutations_per_config)):  # Only 2 permutations per combo
                         configs_tested += 1
                         
                         sorted_images = self._sort_images(images, sort_strategy)
@@ -614,7 +614,7 @@ class AtlasGenerator:
                             }
                             best_score = score
         
-        # Recherche aléatoire globale supplémentaire
+        # Additional global random search
         if use_random and best_result:
             best_atlas_size = best_result['atlas_size']
             best_placement = best_result.get('placement_strategy', 'best_area_fit')
@@ -674,51 +674,50 @@ class AtlasGenerator:
         return best_result
     
     def find_best_packing(self, images: List[Tuple[str, Image.Image]], use_advanced_search: bool = True) -> Dict[str, Any]:
-        """Teste plusieurs configurations et retourne la meilleure
+        """Tests multiple configurations and returns the best one
         
         Args:
-            images: Liste des images à packer
-            use_advanced_search: Active la recherche avancée avec permutations aléatoires
+            images: List of images to pack
+            use_advanced_search: Enable advanced search with random permutations
         
         Returns:
-            dict: Meilleure configuration avec tous les atlas générés
+            dict: Best configuration with all generated atlases
         """
-        print("\n🔍 Génération adaptative : réoptimisation à chaque atlas...")
-        
+        print("\n🔍 Adaptive generation: re-optimization for each atlas...")        
         atlases = []
         remaining_images = images.copy()
         atlas_index = 0
         
         while remaining_images:
-            print(f"\n  Atlas #{atlas_index + 1} : {len(remaining_images)} images restantes")
+            print(f"\n  Atlas #{atlas_index + 1}: {len(remaining_images)} remaining images")
             
-            # Trouver la meilleure config pour UN atlas avec les images restantes
+            # Find best config for ONE atlas with remaining images
             best_atlas = self.find_best_single_atlas(remaining_images, use_random=use_advanced_search)
             
             if not best_atlas:
-                print("  ⚠️ Impossible de générer un atlas avec les images restantes")
+                print("  ⚠️ Impossible to generate atlas with remaining images")
                 break
             
-            # Ajouter cet atlas
+            # Add this atlas
             atlases.append(best_atlas)
             
             print(f"  ✅ Config: size={best_atlas['atlas_size']}, placement={best_atlas.get('placement_strategy', 'N/A')}, sort={best_atlas['sort_strategy']}")
             print(f"     → {best_atlas['count']} images, {best_atlas['width']}x{best_atlas['height']}, "
-                  f"{best_atlas['score']['efficiency']:.1f}% efficacité")
+                  f"{best_atlas['score']['efficiency']:.1f}% efficiency")
             
-            # Retirer les images placées
+            # Remove placed images
             processed_filenames = set(best_atlas['uv'].keys())
             remaining_images = [(name, img) for name, img in remaining_images 
                               if name not in processed_filenames]
             
             atlas_index += 1
             
-            # Sécurité
+            # Safety check
             if atlas_index > 100:
-                print("  ⚠️ Limite de 100 atlas atteinte")
+                print("  ⚠️ Limit of 100 atlases reached")
                 break
         
-        # Calculer le score global
+        # Calculate global score
         total_atlas_area = sum(a['width'] * a['height'] for a in atlases)
         total_image_area = sum(
             sum(uv['width'] * uv['height'] for uv in a['uv'].values())
@@ -739,30 +738,30 @@ class AtlasGenerator:
             }
         }
         
-        print(f"\n✅ Résultat final (adaptatif):")
-        print(f"   → {len(atlases)} atlas, {efficiency:.1f}% efficacité, "
-              f"{result['score']['wasted_area']:.0f}px² perdus")
+        print(f"\n✅ Final result (adaptive):")
+        print(f"   → {len(atlases)} atlases, {efficiency:.1f}% efficiency, "
+              f"{result['score']['wasted_area']:.0f}px² wasted")
         
         return result
     
     def create_individual_atlases(self, images: List[Tuple[str, Image.Image]]) -> List[Dict]:
-        """Crée un atlas séparé pour chaque image (fallback)
+        """Creates a separate atlas for each image (fallback)
         
-        Chaque image est redimensionnée si nécessaire pour tenir dans max_atlas_size
+        Each image is resized if necessary to fit within max_atlas_size
         
         Returns:
-            list: Liste des atlas générés (un par image)
+            list: List of generated atlases (one per image)
         """
         atlases = []
         
         for filename, img in images:
             img_width, img_height = img.size
             
-            # Calculer la taille max de l'image en tenant compte du padding
+            # Calculate max image size accounting for padding
             max_image_width = self.max_atlas_size - self.padding * 2
             max_image_height = self.max_atlas_size - self.padding * 2
             
-            # Vérifier si l'image dépasse la taille max et la redimensionner si nécessaire
+            # Check if image exceeds max size and resize if necessary
             if img_width > max_image_width or img_height > max_image_height:
                 ratio = min(max_image_width / img_width, max_image_height / img_height)
                 new_width = int(img_width * ratio)
@@ -770,15 +769,15 @@ class AtlasGenerator:
                 img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                 img_width, img_height = new_width, new_height
             
-            # Créer un atlas avec padding (maintenant garanti <= max_atlas_size)
+            # Create atlas with padding (now guaranteed <= max_atlas_size)
             atlas_width = img_width + self.padding * 2
             atlas_height = img_height + self.padding * 2
             atlas = Image.new('RGBA', (atlas_width, atlas_height), (0, 0, 0, 0))
             
-            # Placer l'image au centre avec padding
+            # Place image at center with padding
             atlas.paste(img, (self.padding, self.padding))
             
-            # Coordonnées UV (l'image occupe tout l'atlas sauf le padding)
+            # UV coordinates (image occupies entire atlas except padding)
             uv_coords = {
                 filename: {
                     'x': self.padding,
@@ -788,7 +787,7 @@ class AtlasGenerator:
                 }
             }
             
-            # Calculer les coordonnées UV normalisées
+            # Calculate normalized UV coordinates
             uv_coords[filename]['rect_x'] = self.padding / atlas_width
             uv_coords[filename]['rect_y'] = 1.0 - (self.padding + img_height) / atlas_height
             uv_coords[filename]['rect_width'] = img_width / atlas_width
@@ -805,9 +804,9 @@ class AtlasGenerator:
         return atlases
     
     def generate_atlases(self) -> Dict[str, Any]:
-        """Génère tous les atlas avec différents niveaux de downscale"""
+        """Generates all atlases with different downscale levels"""
         
-        # Charger le fichier manifest.json s'il existe
+        # Load manifest.json file if it exists
         manifest_file = os.path.join(self.input_folder, "manifest.json")
         metadata_json = None
         images_metadata = None
@@ -818,37 +817,37 @@ class AtlasGenerator:
                 with open(manifest_file, 'r', encoding='utf-8') as f:
                     metadata_json = json.load(f)
                 
-                # Support nouvelle structure
+                # Support new structure
                 if "images" in metadata_json:
                     images_metadata = metadata_json["images"]
                     custom_metadata = metadata_json.get("metadata", {})
                 else:
-                    # Ancienne structure (fallback)
+                    # Old structure (fallback)
                     images_metadata = metadata_json
                     custom_metadata = {}
                 
-                print(f"Métadonnées chargées depuis: {manifest_file}")
+                print(f"Metadata loaded from: {manifest_file}")
             except Exception as e:
-                print(f"Erreur lors du chargement de {manifest_file}: {e}")
+                print(f"Error loading {manifest_file}: {e}")
         
-        # Charger toutes les images
+        # Load all images
         image_files = []
-        image_sha_map = {}  # Stocker les SHA des images originales
+        image_sha_map = {}  # Store SHA of original images
         supported_formats = ('.png', '.jpg', '.jpeg', '.bmp', '.tiff')
         
         for filename in os.listdir(self.input_folder):
             if filename.lower().endswith(supported_formats):
                 filepath = os.path.join(self.input_folder, filename)
                 try:
-                    # Calculer le SHA256 du fichier original
+                    # Calculate SHA256 of original file
                     with open(filepath, 'rb') as f:
                         file_hash = hashlib.sha256(f.read()).hexdigest()
                     image_sha_map[filename] = file_hash
                     
                     img = Image.open(filepath)
-                    img = img.convert('RGBA')  # Assurer le format RGBA
+                    img = img.convert('RGBA')  # Ensure RGBA format
                     
-                    # Redimensionner l'image si elle dépasse max_image_size
+                    # Resize image if it exceeds max_image_size
                     width, height = img.size
                     if width > self.max_image_size or height > self.max_image_size:
                         ratio = min(self.max_image_size / width, self.max_image_size / height)
@@ -859,15 +858,15 @@ class AtlasGenerator:
                     
                     image_files.append((filename, img))
                 except Exception as e:
-                    print(f"Erreur lors du chargement de {filename}: {e}")
+                    print(f"Error loading {filename}: {e}")
         
         if not image_files:
-            print("Aucune image trouvée dans le dossier d'entrée")
+            print("No images found in input folder")
             return {}
         
-        print(f"Images chargées: {len(image_files)}")
+        print(f"Images loaded: {len(image_files)}")
         
-        # Résultats finaux
+        # Final results
         atlas_data = {
             'version': 1,
             'atlases': [],
@@ -877,9 +876,9 @@ class AtlasGenerator:
             'padding': self.padding
         }
         
-        # Ajouter les métadonnées des images si elles existent
+        # Add image metadata if it exists
         if images_metadata is not None:
-            # Ajouter les SHA aux métadonnées
+            # Add SHA to metadata
             enriched_metadata = {}
             for img_name, meta in images_metadata.items():
                 enriched_meta = meta.copy()
@@ -888,18 +887,18 @@ class AtlasGenerator:
                 enriched_metadata[img_name] = enriched_meta
             atlas_data['images_metadata'] = enriched_metadata
         else:
-            # Créer des métadonnées basiques avec SHA
+            # Create basic metadata with SHA
             atlas_data['images_metadata'] = {
                 img_name: {'sha': image_sha_map.get(img_name, '')}
                 for img_name, _ in image_files
             }
         
-        # Ajouter les métadonnées custom si elles existent
+        # Add custom metadata if it exists
         if custom_metadata is not None and custom_metadata:
             atlas_data['metadata'] = custom_metadata
         
-        # Générer des atlas pour différents niveaux de downscale
-        scale_factors = [1, 2, 4, 8, 16]  # Niveaux de downscale
+        # Generate atlases for different downscale levels
+        scale_factors = [1, 2, 4, 8, 16]  # Downscale levels
         
         for scale_factor in scale_factors:
             print(f"\n{'='*60}")
@@ -912,21 +911,21 @@ class AtlasGenerator:
                 downscaled_img = self.downscale_image(img, scale_factor)
                 downscaled_images.append((filename, downscaled_img))
             
-            # Trouver la meilleure configuration de packing
+            # Find best packing configuration
             best_config = self.find_best_packing(downscaled_images)
             
             if not best_config or not best_config['atlases']:
-                print(f"⚠️ Aucune configuration valide trouvée pour downscale x{scale_factor}")
-                print(f"   → Création d'un atlas par image (mode fallback)...")
+                print(f"⚠️ No valid configuration found for downscale x{scale_factor}")
+                print(f"   → Creating one atlas per image (fallback mode)...")
                 
-                # Créer un atlas individuel pour chaque image
+                # Create individual atlas for each image
                 individual_atlases = self.create_individual_atlases(downscaled_images)
                 
                 if not individual_atlases:
-                    print(f"❌ Échec de la création des atlas individuels")
+                    print(f"❌ Failed to create individual atlases")
                     continue
                 
-                # Utiliser ces atlas comme configuration
+                # Use these atlases as configuration
                 best_config = {
                     'atlases': individual_atlases,
                     'atlas_size': self.max_atlas_size,
@@ -934,9 +933,9 @@ class AtlasGenerator:
                     'score': self.evaluate_atlas_configuration(individual_atlases)
                 }
                 
-                print(f"   ✅ {len(individual_atlases)} atlas individuels créés")
+                print(f"   ✅ {len(individual_atlases)} individual atlases created")
             
-            # Trier les atlas par nombre d'images (décroissant) pour que les plus remplis soient en premier
+            # Sort atlases by image count (descending) so most filled come first
             sorted_atlases = sorted(best_config['atlases'], key=lambda a: a['count'], reverse=True)
             
             # Sauvegarder les atlas de la meilleure configuration
@@ -945,7 +944,7 @@ class AtlasGenerator:
                 atlas = atlas_info['atlas']
                 uv_coords = atlas_info['uv']
                 
-                # Calculer l'efficacité individuelle de cet atlas
+                # Calculate individual efficiency of this atlas
                 atlas_area = atlas.width * atlas.height
                 image_area = sum(uv['width'] * uv['height'] for uv in uv_coords.values())
                 padding_area = sum(
@@ -954,16 +953,16 @@ class AtlasGenerator:
                 )
                 individual_efficiency = ((image_area + padding_area) / atlas_area * 100) if atlas_area > 0 else 0
                 
-                # Sauvegarder l'atlas
+                # Save atlas
                 atlas_filename = f"atlas_x{scale_factor:02d}_{atlas_index:02d}.png"
                 atlas_path = os.path.join(self.output_folder, atlas_filename)
                 atlas.save(atlas_path, optimize=True)
                 
-                # Calculer le SHA256 de l'atlas sauvegardé
+                # Calculate SHA256 of saved atlas
                 with open(atlas_path, 'rb') as f:
                     atlas_hash = hashlib.sha256(f.read()).hexdigest()
                 
-                # Ajouter aux données avec métadonnées de configuration
+                # Add to data with configuration metadata
                 atlas_data_info = {
                     'file': atlas_filename,
                     'scale': scale_factor,
@@ -979,25 +978,25 @@ class AtlasGenerator:
                 }
                 atlas_data['atlases'].append(atlas_data_info)
                 
-                print(f"💾 Atlas sauvegardé: {atlas_filename} ({len(uv_coords)} images, "
-                      f"{atlas.width}x{atlas.height}, {individual_efficiency:.1f}% efficacité)")
+                print(f"💾 Atlas saved: {atlas_filename} ({len(uv_coords)} images, "
+                      f"{atlas.width}x{atlas.height}, {individual_efficiency:.1f}% efficiency)")
                 
                 atlas_index += 1
             
             scale_atlas_count = len(best_config['atlases'])
             
-            # Si ce niveau de downscale n'a produit qu'un seul atlas, arrêter
+            # If this downscale level produced only one atlas, stop
             if scale_atlas_count == 1:
-                print(f"\n✋ Arrêt: Le downscale x{scale_factor} ne produit qu'un seul atlas (toutes les images rentrent)")
+                print(f"\n✋ Stop: Downscale x{scale_factor} produces only one atlas (all images fit)")
                 break
         
-        # Sauvegarder les données JSON
+        # Save JSON data
         json_path = os.path.join(self.output_folder, "manifest.json")
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(atlas_data, f, indent=2, ensure_ascii=False)
         
-        print(f"\nGénération terminée!")
-        print(f"Nombre total d'atlas générés: {len(atlas_data['atlases'])}")
+        print(f"\nGeneration complete!")
+        print(f"Total atlases generated: {len(atlas_data['atlases'])}")
         print(f"Données sauvegardées dans: {json_path}")
         
         return atlas_data

@@ -8,7 +8,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 $atlas_folder = __DIR__ . '/output_atlases';
 $json_file = $atlas_folder . '/atlas_data.json';
 
-// Fonction pour charger les données JSON
+// Function to load JSON data
 function loadAtlasData($json_file) {
     if (!file_exists($json_file)) {
         http_response_code(404);
@@ -28,34 +28,34 @@ function loadAtlasData($json_file) {
     return $data;
 }
 
-// Fonction pour compresser les données JSON (remplacer les clés string par des index)
+// Function to compress JSON data (replace string keys with indexes)
 function compressAtlasData($data) {
     $compressed_data = [
         'mapping' => [],
         'atlases' => []
     ];
     
-    // Créer un mapping des noms d'images vers des index basé sur l'ordre des métadonnées
+    // Create a mapping from image names to indexes based on metadata order
     $image_name_to_index = [];
     $image_index = 0;
 
-    // Utiliser l'ordre des métadonnées pour déterminer les index
+    // Use metadata order to determine indexes
     foreach ($data['metadata'] as $image_name => $metadata) {
         $image_name_to_index[$image_name] = $image_index;
         $compressed_data['mapping'][$image_index] = $metadata;
         $image_index++;
     }
 
-    // Compresser les atlas
+    // Compress atlases
     foreach ($data['atlases'] as $atlas) {
         $compressed_atlas = [
             'scale' => $atlas['scale'],
             'width' => $atlas['width'],
             'height' => $atlas['height'],
-            'uv' => (object)[] // Forcer à être un objet/dictionnaire
+            'uv' => (object)[] // Force to be an object/dictionary
         ];
 
-        // Remplacer les clés string par des index numériques
+        // Replace string keys with numeric indexes
         foreach ($atlas['uv'] as $image_name => $uv) {
             $index = $image_name_to_index[$image_name];
             $compressed_atlas['uv']->$index = $uv;
@@ -67,7 +67,7 @@ function compressAtlasData($data) {
     return $compressed_data;
 }
 
-// Fonction pour obtenir le type MIME basé sur l'extension
+// Function to get MIME type based on extension
 function getMimeType($file_path) {
     $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
     
@@ -86,7 +86,7 @@ function getMimeType($file_path) {
     return isset($mime_types[$extension]) ? $mime_types[$extension] : 'application/octet-stream';
 }
 
-// Fonction pour servir une image
+// Function to serve an image
 function serveImage($file_path) {
     if (!file_exists($file_path)) {
         http_response_code(404);
@@ -97,17 +97,17 @@ function serveImage($file_path) {
     $mime_type = getMimeType($file_path);
     header('Content-Type: ' . $mime_type);
     header('Content-Length: ' . filesize($file_path));
-    header('Cache-Control: public, max-age=86400'); // Cache 1 jour
+    header('Cache-Control: public, max-age=86400'); // Cache 1 day
     
     readfile($file_path);
     exit;
 }
 
-// Router simple
+// Simple router
 $request_uri = $_SERVER['REQUEST_URI'];
 $path = parse_url($request_uri, PHP_URL_PATH);
 
-// Route: GET /atlas - Retourne le fichier JSON complet compressé
+// Route: GET /atlas - Returns complete compressed JSON file
 if ($path === '/atlas.json') {
     $data = loadAtlasData($json_file);
     $compressed_data = compressAtlasData($data);
@@ -115,7 +115,7 @@ if ($path === '/atlas.json') {
     exit;
 }
 
-// Route: GET /atlas/{index} - Retourne l'image de l'atlas contenant l'image à l'index donné (basé sur les métadonnées)
+// Route: GET /atlas/{index} - Returns the atlas image at the given index
 if (preg_match('/^\/atlas\/(\d+).png$/', $path, $matches)) {
     $requested_index = intval($matches[1]);
     $data = loadAtlasData($json_file);
@@ -136,23 +136,23 @@ if (preg_match('/^\/atlas\/(\d+).png$/', $path, $matches)) {
         exit;
     }
     
-    // Servir l'image de l'atlas
+    // Serve the atlas image
     $image_path = $atlas_folder . '/' . $found_atlas['file'];
     serveImage($image_path);
 }
 
-// Route par défaut - Documentation de l'API
+// Default route - API documentation
 http_response_code(404);
 echo json_encode([
     'error' => 'Route not found',
     'available_routes' => [
-        'GET /atlas.json' => 'Retourne le fichier JSON complet des atlas',
-        'GET /atlas/{index}.png' => 'Retourne l\'image de l\'atlas à l\'index donné'
+        'GET /atlas.json' => 'Returns complete atlas JSON file',
+        'GET /atlas/{index}.png' => 'Returns the atlas image at the given index'
     ],
     'examples' => [
-        '/atlas.json' => 'Données JSON complètes',
-        '/atlas/0.png' => 'Premier atlas (index 0)',
-        '/atlas/1.png' => 'Deuxième atlas (index 1)'
+        '/atlas.json' => 'Complete JSON data',
+        '/atlas/0.png' => 'First atlas (index 0)',
+        '/atlas/1.png' => 'Second atlas (index 1)'
     ]
 ], JSON_PRETTY_PRINT);
 ?>

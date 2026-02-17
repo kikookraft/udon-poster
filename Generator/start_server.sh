@@ -1,17 +1,17 @@
 #!/bin/bash
 
-echo "Démarrage du serveur API Atlas..."
+echo "Starting Atlas API server..."
 echo ""
-echo "Routes disponibles:"
-echo "- GET /atlas.json               : Données JSON complètes"
-echo "- GET /atlas/{index}.png        : Image atlas par index"
+echo "Available routes:"
+echo "- GET /atlas.json               : Complete JSON data"
+echo "- GET /atlas/{index}.png        : Atlas image by index"
 echo ""
-echo "Serveur démarré sur http://localhost:8000"
-echo "Appuyez sur Ctrl+C pour arrêter"
+echo "Server started on http://localhost:8000"
+echo "Press Ctrl+C to stop"
 echo ""
 
-# Change vers le répertoire du script
+# Change to script directory
 cd "$(dirname "$0")"
 
-# Démarre le serveur PHP
+# Start PHP server
 php -S localhost:8000 api.php

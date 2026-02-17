@@ -4,45 +4,45 @@ from PIL import Image
 
 def generate_metadata(input_folder='input_images', progress_callback=None):
     """
-    Génère ou met à jour le fichier manifest.json pour les images
+    Generates or updates the manifest.json file for images
     
     Args:
-        input_folder: Dossier contenant les images
-        progress_callback: Fonction de callback pour la progression (step, total, message)
+        input_folder: Folder containing images
+        progress_callback: Progress callback function (step, total, message)
         
     Returns:
-        dict: Les métadonnées générées ou None en cas d'erreur
+        dict: Generated metadata or None on error
     """
     
     def report_progress(step, total, message):
-        """Helper pour appeler le callback s'il existe"""
+        """Helper to call callback if it exists"""
         if progress_callback:
             progress_callback(step, total, message)
     if not os.path.exists(input_folder):
-        print(f"Le dossier {input_folder} n'existe pas.")
+        print(f"Folder {input_folder} does not exist.")
         return None
     
-    report_progress(1, 4, "Chargement du manifest existant")
+    report_progress(1, 4, "Loading existing manifest")
         
-    # Vérifier qu'il existe un fichier manifest.json
+    # Check if manifest.json file exists
     metadata_json = {"version": 1, "images": {}, "metadata": {}}
     manifest_file = f"{input_folder}/manifest.json"
     try:
         with open(manifest_file, 'r', encoding='utf-8') as file:
             metadata_json = json.load(file)
-            # S'assurer que version existe
+            # Ensure version exists
             if "version" not in metadata_json:
                 metadata_json["version"] = 1
-            print(f"Métadonnées existantes chargées depuis {manifest_file}")
+            print(f"Existing metadata loaded from {manifest_file}")
     except FileNotFoundError:
-        print(f"Le fichier {manifest_file} n'existe pas. Création d'un nouveau fichier de métadonnées.")
+        print(f"File {manifest_file} does not exist. Creating new metadata file.")
     except json.JSONDecodeError:
-        print(f"Le fichier {manifest_file} n'est pas un JSON valide. Création d'un nouveau fichier.")
+        print(f"File {manifest_file} is not valid JSON. Creating new file.")
     
-    # Extensions d'images supportées
+    # Supported image extensions
     supported_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif', '.webp', '.gif'}
     
-    # Parcourir toutes les images dans le dossier
+    # Loop through all images in folder
     image_files = []
     for filename in sorted(os.listdir(input_folder)):
         if os.path.isfile(os.path.join(input_folder, filename)):
@@ -51,15 +51,15 @@ def generate_metadata(input_folder='input_images', progress_callback=None):
                 image_files.append(filename)
     
     if not image_files:
-        print(f"Aucune image trouvée dans le dossier {input_folder}")
+        print(f"No images found in folder {input_folder}")
         return
     
-    report_progress(2, 4, f"Traitement de {len(image_files)} images")
+    report_progress(2, 4, f"Processing {len(image_files)} images")
     
-    print(f"\nImages trouvées: {len(image_files)}")
+    print(f"\nImages found: {len(image_files)}")
     print("="*60)
     
-    # Créer un set des images existantes pour vérification rapide
+    # Create a set of existing images for quick check
     existing_images = set(image_files)
     
     # Traiter chaque image automatiquement
@@ -84,16 +84,16 @@ def generate_metadata(input_folder='input_images', progress_callback=None):
                 print(f"✓ Fichier retrouvé: {filename}")
     
     for filename in image_files:
-        # Créer ou mettre à jour l'entrée avec des valeurs vides par défaut
+        # Create or update entry with empty default values
         if filename not in images_metadata:
             images_metadata[filename] = {
                 "title": "",
                 "url": ""
             }
             new_entries += 1
-            print(f"✓ Nouvelle entrée créée pour: {filename}")
+            print(f"✓ New entry created for: {filename}")
         else:
-            # Vérifier si les champs existent et les créer s'ils sont manquants
+            # Check if fields exist and create them if missing
             if "title" not in images_metadata[filename]:
                 images_metadata[filename]["title"] = ""
                 updated_entries += 1
@@ -102,45 +102,45 @@ def generate_metadata(input_folder='input_images', progress_callback=None):
                 updated_entries += 1
             
             if updated_entries > 0:
-                print(f"✓ Entrée mise à jour pour: {filename}")
+                print(f"✓ Entry updated for: {filename}")
     
-    report_progress(3, 4, "Sauvegarde du manifest")
+    report_progress(3, 4, "Saving manifest")
     
-    # Sauvegarder le fichier JSON
+    # Save JSON file
     try:
-        # Garder l'ordre existant et ajouter les nouvelles images à la fin
-        # Ne pas trier pour préserver l'ordre d'insertion
+        # Keep existing order and add new images at the end
+        # Don't sort to preserve insertion order
         metadata_json["images"] = images_metadata
         
         with open(manifest_file, 'w', encoding='utf-8') as file:
             json.dump(metadata_json, file, indent=2, ensure_ascii=False)
-        print(f"\n✓ Métadonnées sauvegardées dans {manifest_file}")
+        print(f"\n✓ Metadata saved in {manifest_file}")
         
-        report_progress(4, 4, "Génération des métadonnées terminée")
+        report_progress(4, 4, "Metadata generation complete")
         
-        # Afficher un résumé
+        # Display summary
         total_images = len(images_metadata)
         
-        print(f"\nRÉSUMÉ:")
-        print(f"  Total d'images: {total_images}")
-        print(f"  Nouvelles entrées créées: {new_entries}")
+        print(f"\nSUMMARY:")
+        print(f"  Total images: {total_images}")
+        print(f"  New entries created: {new_entries}")
         if missing_files > 0:
-            print(f"  ⚠️ Fichiers manquants: {missing_files}")
+            print(f"  ⚠️ Missing files: {missing_files}")
         
         return metadata_json
         
     except Exception as e:
-        print(f"Erreur lors de la sauvegarde: {e}")
+        print(f"Error saving: {e}")
         return None
 
 
 def main():
-    """Fonction principale pour l'exécution en ligne de commande"""
+    """Main function for command line execution"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Génère ou met à jour le fichier manifest.json pour les images')
+    parser = argparse.ArgumentParser(description='Generates or updates manifest.json file for images')
     parser.add_argument('--input', default='input_images',
-                       help='Dossier des images d\'entrée (par défaut: input_images)')
+                       help='Input images folder (default: input_images)')
     
     args = parser.parse_args()
     generate_metadata(args.input)

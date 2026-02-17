@@ -1,5 +1,5 @@
 """
-Utilitaires pour le CI/CD
+Utilities for CI/CD
 """
 
 import os
@@ -8,33 +8,33 @@ import sys
 
 def check_images_exist(images_folder: str = "images") -> bool:
     """
-    Vérifie si le dossier d'images existe et contient des fichiers
+    Checks if images folder exists and contains files
     
     Args:
-        images_folder: Chemin vers le dossier d'images
+        images_folder: Path to images folder
         
     Returns:
-        True si des images existent, False sinon
+        True if images exist, False otherwise
     """
     if os.path.isdir(images_folder):
         files = os.listdir(images_folder)
         if files:
-            print(f"✅ Dossier images trouvé avec {len(files)} fichiers")
+            print(f"✅ Images folder found with {len(files)} files")
             return True
     
-    print("⚠️ Aucune image trouvée dans le dossier 'images/'")
+    print("⚠️ No images found in 'images/' folder")
     return False
 
 
 def display_deployment_info(deployment_url: str):
     """
-    Affiche les informations de déploiement
+    Displays deployment information
     
     Args:
-        deployment_url: URL de déploiement GitHub Pages
+        deployment_url: GitHub Pages deployment URL
     """
-    print("🎉 Déploiement réussi!")
-    print(f"📍 URL de base: {deployment_url}")
+    print("🎉 Deployment successful!")
+    print(f"📍 Base URL: {deployment_url}")
     print(f"📄 Atlas JSON: {deployment_url}atlas.json")
     print("")
-    print("Utilisez cette URL dans votre monde VRChat!")
+    print("Use this URL in your VRChat world!")

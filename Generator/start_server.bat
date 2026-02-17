@@ -1,12 +1,12 @@
 @echo off
-echo Demarrage du serveur API Atlas...
+echo Starting Atlas API server...
 echo.
-echo Routes disponibles:
-echo - GET /atlas.json              : Donnees JSON completes
-echo - GET /atlas/{index}.png       : Image atlas par index
+echo Available routes:
+echo - GET /atlas.json              : Complete JSON data
+echo - GET /atlas/{index}.png       : Atlas image by index
 echo.
-echo Serveur demarre sur http://localhost:8000
-echo Appuyez sur Ctrl+C pour arreter
+echo Server started on http://localhost:8000
+echo Press Ctrl+C to stop
 echo.
 
 cd /d "%~dp0"

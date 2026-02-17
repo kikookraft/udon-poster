@@ -3,17 +3,17 @@ name: Generate Atlas for GitHub Pages
 on:
   push:
     branches:
-      - public      # Déclenche sur les commits de la branche public (contient les images et assets)
-      - main        # Déclenche aussi sur main pour les mises à jour du workflow
-  workflow_dispatch:  # Permet de déclencher manuellement
+      - public      # Triggers on commits to public branch (contains images and assets)
+      - main        # Also triggers on main for workflow updates
+  workflow_dispatch:  # Allows manual triggering
 
-# Définir les permissions nécessaires pour GitHub Pages
+# Define permissions needed for GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Éviter les exécutions concurrentes
+# Avoid concurrent executions
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -34,7 +34,7 @@ jobs:
           ref: main
           path: main
       
-      - name: Checkout public branch (images et assets)
+      - name: Checkout public branch (images and assets)
         uses: actions/checkout@v4
         with:
           ref: public
@@ -56,10 +56,10 @@ jobs:
         run: |
           if [ -d "public/images" ] && [ "$(ls -A public/images 2>/dev/null | grep -v '.git' | grep -v 'README' | grep -v 'manifest.json')" ]; then
             echo "images_exist=true" >> $GITHUB_OUTPUT
-            echo "✅ Dossier images trouvé avec des fichiers"
+            echo "✅ Images folder found with files"
           else
             echo "images_exist=false" >> $GITHUB_OUTPUT
-            echo "⚠️ Aucune image trouvée"
+            echo "⚠️ No images found"
           fi
       
       - name: Generate atlases from source images
@@ -68,7 +68,7 @@ jobs:
         run: |
           cd main/Generator
           
-          echo "🎨 Génération des atlas à partir des images sources..."
+          echo "🎨 Generating atlases from source images..."
           python CI/generate_atlas_ci.py generate --input ../../public/images --output output_atlases
       
       - name: Generate static version
@@ -76,17 +76,17 @@ jobs:
         run: |
           cd main/Generator
           
-          echo "📦 Génération de la version statique pour GitHub Pages..."
+          echo "📦 Generating static version for GitHub Pages..."
           python CI/generate_atlas_ci.py static --output output_atlases --static-output output_static
       
       - name: Copy public assets to output
         run: |
-          echo "📄 Copie des assets publics..."
+          echo "📄 Copying public assets..."
           if [ -d "public/public" ]; then
             cp -r public/public/* main/Generator/output_static/ 2>/dev/null || true
-            echo "✅ Assets publics copiés (incluant index.html)"
+            echo "✅ Public assets copied (including index.html)"
           else
-            echo "⚠️ Aucun dossier public/public/ trouvé"
+            echo "⚠️ No public/public/ folder found"
           fi
       
       - name: Upload static output
@@ -94,7 +94,7 @@ jobs:
         with:
           name: atlas-static
           path: main/Generator/output_static
-          retention-days: 1  # Temporaire, seulement pour passer entre jobs
+          retention-days: 1  # Temporary, only to pass between jobs
 
   create-archive:
     name: Create Atlas Archive
@@ -115,13 +115,13 @@ jobs:
           mkdir -p atlas-package
           cp atlas-static/atlas.json atlas-package/
           cp -r atlas-static/atlas atlas-package/
-          echo "📦 Contenu de l'artifact: atlas.json et dossier atlas/"
+          echo "📦 Artifact content: atlas.json and atlas/ folder"
       
       - name: Calculate size
         id: calculate_size
         run: |
           SIZE=$(du -sh atlas-package | cut -f1)
-          echo "📦 Taille du contenu: $SIZE"
+          echo "📦 Content size: $SIZE"
           echo "zip_size=$SIZE" >> $GITHUB_OUTPUT
       
       - name: Upload Atlas artifact
@@ -162,7 +162,7 @@ jobs:
       
       - name: Display deployment info
         run: |
-          echo "🎉 Déploiement réussi!"
+          echo "🎉 Deployment successful!"
           echo "📍 URL: ${{ steps.deployment.outputs.page_url }}"
 
   summary:
@@ -179,28 +179,28 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
             | jq -r '.artifacts[] | select(.name=="atlas") | "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/\(.id)"')
           echo "url=$ARTIFACT_URL" >> $GITHUB_OUTPUT
-          echo "📦 URL artifact: $ARTIFACT_URL"
+          echo "📦 Artifact URL: $ARTIFACT_URL"
       
       - name: Create consolidated summary
         run: |
           PAGE_URL="${{ needs.deploy-pages.outputs.page_url }}"
           ARTIFACT_URL="${{ steps.artifact_url.outputs.url }}"
           
-          # Résumé consolidé unique
+          # Single consolidated summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
 
-          ## Statistiques
+          ## Statistics
           
-          - **Images traitées**: ${{ needs.generate-atlas.outputs.num_images }}
-          - **Atlas générés**: ${{ needs.generate-atlas.outputs.num_atlases }}
-          - **Niveaux de downscale**: ${{ needs.generate-atlas.outputs.downscales }}
-          - **Taille de l'archive**: ${{ needs.create-archive.outputs.zip_size }}o
+          - **Processed images**: ${{ needs.generate-atlas.outputs.num_images }}
+          - **Generated atlases**: ${{ needs.generate-atlas.outputs.num_atlases }}
+          - **Downscale levels**: ${{ needs.generate-atlas.outputs.downscales }}
+          - **Archive size**: ${{ needs.create-archive.outputs.zip_size }}B
           
-          ## Déploiement
+          ## Deployment
           
           | Type | URL |
           |------|-----|
-          | **🌍 Site web** | [$PAGE_URL]($PAGE_URL) |
-          | **📄 API Atlas** | [${PAGE_URL}atlas.json](${PAGE_URL}atlas.json) |
-          | **📦 Archive ZIP** | [Télécharger]($ARTIFACT_URL) |
+          | **🌍 Website** | [$PAGE_URL]($PAGE_URL) |
+          | **📄 Atlas API** | [${PAGE_URL}atlas.json](${PAGE_URL}atlas.json) |
+          | **📦 ZIP Archive** | [Download]($ARTIFACT_URL) |
           EOF

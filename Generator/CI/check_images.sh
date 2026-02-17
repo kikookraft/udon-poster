@@ -1,18 +1,18 @@
 #!/bin/bash
-# Script pour vérifier la présence des images sources
-# Utilisé par le workflow GitHub Actions
+# Script to check for source images
+# Used by GitHub Actions workflow
 
 check_images() {
     if [ -d "images" ] && [ "$(ls -A images 2>/dev/null)" ]; then
         echo "images_exist=true"
-        echo "✅ Dossier images trouvé avec $(ls -1 images | wc -l) fichiers"
+        echo "✅ Images folder found with $(ls -1 images | wc -l) files"
         return 0
     else
         echo "images_exist=false"
-        echo "⚠️ Aucune image trouvée dans le dossier 'images/'"
+        echo "⚠️ No images found in 'images/' folder"
         return 1
     fi
 }
 
-# Exécuter la vérification
+# Run check
 check_images
