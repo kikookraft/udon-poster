@@ -17,11 +17,14 @@ def generate_metadata(input_folder='input_images'):
         return None
         
     # Vérifier qu'il existe un fichier manifest.json
-    metadata_json = {"images": {}, "metadata": {}}
+    metadata_json = {"version": 1, "images": {}, "metadata": {}}
     manifest_file = f"{input_folder}/manifest.json"
     try:
         with open(manifest_file, 'r', encoding='utf-8') as file:
             metadata_json = json.load(file)
+            # S'assurer que version existe
+            if "version" not in metadata_json:
+                metadata_json["version"] = 1
             print(f"Métadonnées existantes chargées depuis {manifest_file}")
     except FileNotFoundError:
         print(f"Le fichier {manifest_file} n'existe pas. Création d'un nouveau fichier de métadonnées.")

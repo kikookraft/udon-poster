@@ -17,6 +17,7 @@ def compress_atlas_data(data):
     Équivalent de la fonction PHP compressAtlasData
     """
     compressed_data = {
+        'version': data.get('version', 1),
         'mapping': [],
         'atlases': []
     }
@@ -41,6 +42,7 @@ def compress_atlas_data(data):
             'scale': atlas['scale'],
             'width': atlas['width'],
             'height': atlas['height'],
+            'sha': atlas.get('sha', ''),
             'uv': {}
         }
 

@@ -1,6 +1,7 @@
 import os
 import json
 import math
+import hashlib
 from PIL import Image, ImageDraw
 from typing import List, Tuple, Dict, Any
 
@@ -255,12 +256,18 @@ class AtlasGenerator:
         
         # Charger toutes les images
         image_files = []
+        image_sha_map = {}  # Stocker les SHA des images originales
         supported_formats = ('.png', '.jpg', '.jpeg', '.bmp', '.tiff')
         
         for filename in os.listdir(self.input_folder):
             if filename.lower().endswith(supported_formats):
                 filepath = os.path.join(self.input_folder, filename)
                 try:
+                    # Calculer le SHA256 du fichier original
+                    with open(filepath, 'rb') as f:
+                        file_hash = hashlib.sha256(f.read()).hexdigest()
+                    image_sha_map[filename] = file_hash
+                    
                     img = Image.open(filepath)
                     img = img.convert('RGBA')  # Assurer le format RGBA
                     img = self.resize_image_if_needed(img)  # Redimensionner si nécessaire
@@ -276,6 +283,7 @@ class AtlasGenerator:
         
         # Résultats finaux
         atlas_data = {
+            'version': 1,
             'atlases': [],
             'total_images': len(image_files),
             'max_atlas_size': self.max_atlas_size
@@ -283,7 +291,20 @@ class AtlasGenerator:
         
         # Ajouter les métadonnées des images si elles existent
         if images_metadata is not None:
-            atlas_data['images_metadata'] = images_metadata
+            # Ajouter les SHA aux métadonnées
+            enriched_metadata = {}
+            for img_name, meta in images_metadata.items():
+                enriched_meta = meta.copy()
+                if img_name in image_sha_map:
+                    enriched_meta['sha'] = image_sha_map[img_name]
+                enriched_metadata[img_name] = enriched_meta
+            atlas_data['images_metadata'] = enriched_metadata
+        else:
+            # Créer des métadonnées basiques avec SHA
+            atlas_data['images_metadata'] = {
+                img_name: {'sha': image_sha_map.get(img_name, '')}
+                for img_name, _ in image_files
+            }
         
         # Ajouter les métadonnées custom si elles existent
         if custom_metadata is not None and custom_metadata:
@@ -317,6 +338,10 @@ class AtlasGenerator:
                 atlas_path = os.path.join(self.output_folder, atlas_filename)
                 atlas.save(atlas_path)
                 
+                # Calculer le SHA256 de l'atlas sauvegardé
+                with open(atlas_path, 'rb') as f:
+                    atlas_hash = hashlib.sha256(f.read()).hexdigest()
+                
                 # Ajouter aux données
                 atlas_info = {
                     'file': atlas_filename,
@@ -325,7 +350,8 @@ class AtlasGenerator:
                     'width': atlas.width,
                     'height': atlas.height,
                     'uv': uv_coords,
-                    'count': len(uv_coords)
+                    'count': len(uv_coords),
+                    'sha': atlas_hash
                 }
                 atlas_data['atlases'].append(atlas_info)
                 
