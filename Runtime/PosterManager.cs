@@ -19,6 +19,8 @@ namespace Nappollen.UdonPoster {
 		[HideInInspector] public Poster[] posters;
 		[HideInInspector] public Material material;
 		private VRCImageDownloader m;
+		private bool fastLoad = false;
+		private bool fastLoadFirstAtlasLoaded = false;
 
 		public override void OnPlayerJoined(VRCPlayerApi player) {
 			if (!player.isLocal)
@@ -50,15 +52,28 @@ namespace Nappollen.UdonPoster {
 			return -1;
 		}
 
-		public override void OnImageLoadSuccess(IVRCImageDownload result) {
-			if (!IsAtlasUrl(result.Url))
-				return;
-			NextUrl();
-			var texture    = result.Result;
-			var atlasIndex = GetAtlasIndex(result.Url);
-			foreach (var poster in posters)
-				poster.OnAtlasImageLoaded(this, texture, atlasIndex);
+	public override void OnImageLoadSuccess(IVRCImageDownload result) {
+		if (!IsAtlasUrl(result.Url))
+			return;
+		
+		var texture    = result.Result;
+		var atlasIndex = GetAtlasIndex(result.Url);
+		
+		// Apply texture to posters
+		foreach (var poster in posters)
+			poster.OnAtlasImageLoaded(this, texture, atlasIndex);
+		
+		// Handle fastload: after first atlas (lowest resolution), skip to x1
+		if (fastLoad && !fastLoadFirstAtlasLoaded) {
+			fastLoadFirstAtlasLoaded = true;
+			Debug.Log("PosterManager: Fast load - first atlas loaded, skipping to scale x1");
+			// Force loading scale x1 next
+			LoadScaleOne();
+			return;
 		}
+		
+		NextUrl();
+	}
 
 		public override void OnImageLoadError(IVRCImageDownload result) {
 			if (!IsAtlasUrl(result.Url))
@@ -69,30 +84,43 @@ namespace Nappollen.UdonPoster {
 				poster.OnAtlasImageError(this, atlasIndex, (int)result.Error, result.ErrorMessage);
 		}
 
-		public override void OnStringLoadSuccess(IVRCStringDownload result) {
-			if (result.Url.Get() != metaUrl.Get())
-				return;
+	public override void OnStringLoadSuccess(IVRCStringDownload result) {
+		if (result.Url.Get() != metaUrl.Get())
+			return;
 
-			var data = VRCJson.TryDeserializeFromJson(result.Result, out var r)
-				? r.DataDictionary
-				: null;
+		var data = VRCJson.TryDeserializeFromJson(result.Result, out var r)
+			? r.DataDictionary
+			: null;
 
-			if (data == null) {
-				foreach (var poster in posters)
-					poster.OnMetadataError(this, -1, "Invalid metadata format");
-				return;
-			}
-
-			// Get mapping from metadata
-			var mapping = data.TryGetValue("mapping", TokenType.DataList, out var d0)
-				? d0.DataList
-				: new DataList();
-
-			// Assign images to posters based on key groups
-			AssignImagesToPostersByKey(data, mapping);
-
-			NextUrl();
+		if (data == null) {
+			foreach (var poster in posters)
+				poster.OnMetadataError(this, -1, "Invalid metadata format");
+			return;
 		}
+
+		// Check for fastload in metadata
+		fastLoad = false;
+		fastLoadFirstAtlasLoaded = false;
+		if (data.TryGetValue("metadata", TokenType.DataDictionary, out var metadataToken)) {
+			var metadata = metadataToken.DataDictionary;
+			if (metadata.TryGetValue("fastload", TokenType.Boolean, out var fastloadToken)) {
+				fastLoad = fastloadToken.Boolean;
+				if (fastLoad) {
+					Debug.Log("PosterManager: Fast load enabled - loading lowest resolution first");
+				}
+			}
+		}
+
+		// Get mapping from metadata
+		var mapping = data.TryGetValue("mapping", TokenType.DataList, out var d0)
+			? d0.DataList
+			: new DataList();
+
+		// Assign images to posters based on key groups
+		AssignImagesToPostersByKey(data, mapping);
+
+		NextUrl();
+	}
 
 		private void AssignImagesToPostersByKey(DataDictionary data, DataList mapping) {
 			if (data == null || mapping == null || posters == null || posters.Length == 0)
@@ -146,6 +174,38 @@ namespace Nappollen.UdonPoster {
 				}
 				// Otherwise, ignore the image (no available poster in the group)
 			}
+		}
+
+		private void LoadScaleOne() {
+			if (posters == null || posters.Length == 0)
+				return;
+
+			// Get all atlas indices for scale 1
+			var indices = new int[ 0 ];
+			foreach (var poster in posters) {
+				var index = poster.GetAtlasIndex(1);
+				if (index < 0 || Array.IndexOf(indices, index) >= 0)
+					continue;
+				var newIndices = new int[ indices.Length + 1 ];
+				Array.Copy(indices, newIndices, indices.Length);
+				newIndices[indices.Length] = index;
+				indices                    = newIndices;
+			}
+
+			if (indices.Length == 0) {
+				Debug.LogWarning("PosterManager: No scale x1 atlas found");
+				return;
+			}
+
+			// Load first scale x1 atlas
+			var atlasUrl = indices[0] < 0 || indices[0] >= atlasUrls.Length ? null : atlasUrls[indices[0]];
+			if (atlasUrl == null || string.IsNullOrEmpty(atlasUrl.Get())) {
+				Debug.LogWarning("PosterManager: Invalid atlas URL for scale x1 index " + indices[0]);
+				return;
+			}
+
+			Debug.Log("PosterManager: Loading scale x1 atlas at index " + indices[0]);
+			m.DownloadImage(atlasUrl, material, (IUdonEventReceiver)this, new TextureInfo());
 		}
 
 		private void NextUrl() {

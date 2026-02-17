@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Example scene (`Assets/Example.unity`) with sample poster setup and configurations
+- Fast load feature: when `fastload: true` is set in atlas metadata, loads only the first low-resolution atlas, then skips directly to scale ×1 for faster initial display
 - Poster grouping system with `key` field
   - Each poster can be assigned a `key` to define its group
   - Images with matching `key` in manifest are assigned to corresponding poster groups
