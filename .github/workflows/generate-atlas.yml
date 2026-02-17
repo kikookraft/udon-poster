@@ -1,11 +1,24 @@
 name: Generate Atlas for GitHub Pages
 
 on:
-  push:
-    branches:
-      - public      # Triggers on commits to public branch (contains images and assets)
-      - main        # Also triggers on main for workflow updates
   workflow_dispatch:  # Allows manual triggering
+  workflow_call:      # Allows this workflow to be reused by other repositories
+    inputs:
+      input-path:
+        description: 'Path to images folder in calling repository'
+        required: false
+        default: 'images'
+        type: string
+    outputs:
+      page-url:
+        description: 'URL of the deployed GitHub Pages site'
+        value: ${{ jobs.deploy-pages.outputs.page_url }}
+      num-atlases:
+        description: 'Number of generated atlases'
+        value: ${{ jobs.generate-atlas.outputs.num_atlases }}
+      num-images:
+        description: 'Number of processed images'
+        value: ${{ jobs.generate-atlas.outputs.num_images }}
 
 # Define permissions needed for GitHub Pages
 permissions:
@@ -28,17 +41,17 @@ jobs:
       downscales: ${{ steps.generate.outputs.downscales }}
     
     steps:
-      - name: Checkout main branch (code)
+      - name: Checkout generator code from nappollen/udon-poster
         uses: actions/checkout@v4
         with:
+          repository: nappollen/udon-poster
           ref: main
-          path: main
+          path: generator
       
-      - name: Checkout public branch (images and assets)
+      - name: Checkout current repository (images)
         uses: actions/checkout@v4
         with:
-          ref: public
-          path: public
+          path: images-repo
           fetch-depth: 0
       
       - name: Set up Python
@@ -48,33 +61,35 @@ jobs:
       
       - name: Install Python dependencies
         run: |
-          cd main/Generator
+          cd generator/Generator
           pip install -r requirements.txt
       
       - name: Check for source images
         id: check_images
         run: |
-          if [ -d "public/images" ] && [ "$(ls -A public/images 2>/dev/null | grep -v '.git' | grep -v 'README' | grep -v 'manifest.json')" ]; then
+          INPUT_PATH="${{ inputs.input-path || 'images' }}"
+          if [ -d "images-repo/$INPUT_PATH" ] && [ "$(ls -A images-repo/$INPUT_PATH 2>/dev/null | grep -v '.git' | grep -v 'README' | grep -v 'manifest.json')" ]; then
             echo "images_exist=true" >> $GITHUB_OUTPUT
-            echo "✅ Images folder found with files"
+            echo "✅ Images folder found with files in $INPUT_PATH"
           else
             echo "images_exist=false" >> $GITHUB_OUTPUT
-            echo "⚠️ No images found"
+            echo "⚠️ No images found in $INPUT_PATH"
           fi
       
       - name: Generate atlases from source images
         id: generate
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
-          cd main/Generator
+          cd generator/Generator
+          INPUT_PATH="${{ inputs.input-path || 'images' }}"
           
           echo "🎨 Generating atlases from source images..."
-          python CI/generate_atlas_ci.py generate --input ../../public/images --output output_atlases
+          python CI/generate_atlas_ci.py generate --input "../../images-repo/$INPUT_PATH" --output output_atlases
       
       - name: Generate static version
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
-          cd main/Generator
+          cd generator/Generator
           
           echo "📦 Generating static version for GitHub Pages..."
           python CI/generate_atlas_ci.py static --output output_atlases --static-output output_static
@@ -82,18 +97,18 @@ jobs:
       - name: Copy public assets to output
         run: |
           echo "📄 Copying public assets..."
-          if [ -d "public/public" ]; then
-            cp -r public/public/* main/Generator/output_static/ 2>/dev/null || true
+          if [ -d "images-repo/public" ]; then
+            cp -r images-repo/public/* generator/Generator/output_static/ 2>/dev/null || true
             echo "✅ Public assets copied (including index.html)"
           else
-            echo "⚠️ No public/public/ folder found"
+            echo "⚠️ No public/ folder found"
           fi
       
       - name: Upload static output
         uses: actions/upload-artifact@v4
         with:
           name: atlas-static
-          path: main/Generator/output_static
+          path: generator/Generator/output_static
           retention-days: 1  # Temporary, only to pass between jobs
 
   create-archive:
