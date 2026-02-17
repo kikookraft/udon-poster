@@ -1003,22 +1003,30 @@ class AtlasGenerator:
         return atlas_data
 
 
-def main(input_folder='input_images', output_folder='output_atlases', max_atlas_size=2048, padding=2, max_image_size=None):
+def main(input_folder='input_images', output_folder='output_atlases', max_atlas_size=2048, padding=2, max_image_size=None, progress_callback=None):
     """
     Fonction principale pour générer les atlas
     
     Args:
         input_folder: Dossier contenant les images sources
         output_folder: Dossier de sortie pour les atlas
+        progress_callback: Fonction de callback pour la progression (step, total, message)
         
     Returns:
         dict: Les données d'atlas générées ou None en cas d'erreur
     """
     
+    def report_progress(step, total, message):
+        """Helper pour appeler le callback s'il existe"""
+        if progress_callback:
+            progress_callback(step, total, message)
+    
     # Vérifier que le dossier d'entrée existe
     if not os.path.exists(input_folder):
         print(f"Erreur: Le dossier '{input_folder}' n'existe pas!")
         return None
+    
+    report_progress(1, 5, "Initialisation du générateur d'atlas")
     
     # Créer le générateur d'atlas
     generator = AtlasGenerator(
@@ -1029,11 +1037,17 @@ def main(input_folder='input_images', output_folder='output_atlases', max_atlas_
         output_folder=output_folder
     )
     
+    report_progress(2, 5, "Chargement des images")
+    
     # Générer les atlas
+    report_progress(3, 5, "Génération des atlas en cours...")
     atlas_data = generator.generate_atlases()
+    
+    report_progress(4, 5, "Sauvegarde des résultats")
     
     # Afficher un résumé
     if atlas_data:
+        report_progress(5, 5, "Génération terminée avec succès")
         print("\n=== RÉSUMÉ ===")
         print(f"Images traitées: {atlas_data['total_images']}")
         print(f"Atlas générés: {len(atlas_data['atlases'])}")

@@ -89,17 +89,25 @@ def copy_and_rename_images(atlas_folder, output_static_folder, atlas_data):
     return copied_files
 
 
-def generate_static_version(input_path=None, output_path=None):
+def generate_static_version(input_path=None, output_path=None, progress_callback=None):
     """
     Fonction principale pour générer la version statique
     
     Args:
         input_path: Dossier des atlas d'entrée (par défaut: 'output_atlases')
         output_path: Dossier de sortie (par défaut: 'output_static')
+        progress_callback: Fonction de callback pour la progression (step, total, message)
         
     Returns:
         dict: Résultat de la génération ou None en cas d'erreur
     """
+    
+    def report_progress(step, total, message):
+        """Helper pour appeler le callback s'il existe"""
+        if progress_callback:
+            progress_callback(step, total, message)
+    report_progress(1, 5, "Initialisation de la génération statique")
+    
     # Déterminer le dossier d'entrée
     if not input_path:
         # Utiliser le dossier par défaut
@@ -130,6 +138,8 @@ def generate_static_version(input_path=None, output_path=None):
     output_static_folder.mkdir(exist_ok=True)
     print(f"Dossier de sortie: {output_static_folder}")
     
+    report_progress(2, 5, "Chargement du manifest des atlas")
+    
     # Charger les données JSON
     try:
         with open(json_file, 'r', encoding='utf-8') as f:
@@ -138,6 +148,8 @@ def generate_static_version(input_path=None, output_path=None):
     except Exception as e:
         print(f"Erreur lors du chargement du JSON: {e}")
         return None
+    
+    report_progress(3, 5, "Compression des données JSON")
     
     # Compresser les données (comme fait l'API PHP)
     compressed_data = compress_atlas_data(atlas_data)
@@ -152,8 +164,12 @@ def generate_static_version(input_path=None, output_path=None):
         print(f"Erreur lors de la sauvegarde du JSON: {e}")
         return None
     
+    report_progress(4, 5, "Copie et renommage des images d'atlas")
+    
     # Copier et renommer les images
     copied_files = copy_and_rename_images(atlas_folder, output_static_folder, atlas_data)
+    
+    report_progress(5, 5, "Génération statique terminée avec succès")
     
     print(f"\n✅ Version statique générée avec succès dans: {output_static_folder}")
     print(f"📁 Fichiers générés:")

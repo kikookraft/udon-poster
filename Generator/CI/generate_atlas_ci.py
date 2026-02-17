@@ -8,6 +8,25 @@ import os
 from pathlib import Path
 
 
+def github_group(title):
+    """Crée un groupe de logs dans GitHub Actions"""
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        print(f"::group::{title}", flush=True)
+
+
+def github_endgroup():
+    """Ferme un groupe de logs dans GitHub Actions"""
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        print("::endgroup::", flush=True)
+
+
+def progress_callback(step, total, message):
+    """Callback pour afficher la progression dans GitHub Actions"""
+    percentage = int((step / total) * 100) if total > 0 else 0
+    progress_bar = '█' * (percentage // 5) + '░' * (20 - percentage // 5)
+    print(f"[{progress_bar}] {percentage}% - {message}", flush=True)
+
+
 def generate_atlases_ci(input_folder: str, output_folder: str):
     """
     Génère les atlas à partir des images sources pour CI
@@ -16,6 +35,8 @@ def generate_atlases_ci(input_folder: str, output_folder: str):
         input_folder: Dossier contenant les images sources
         output_folder: Dossier de sortie pour les atlas
     """
+    github_group("🎨 Génération des atlas")
+    
     # Ajouter le dossier parent au path pour importer generate_posters
     sys.path.insert(0, str(Path(__file__).parent.parent))
     
@@ -27,6 +48,7 @@ def generate_atlases_ci(input_folder: str, output_folder: str):
     # Vérifier que le dossier d'entrée existe
     if not os.path.exists(input_folder):
         print(f"❌ Erreur: Le dossier '{input_folder}' n'existe pas!")
+        github_endgroup()
         sys.exit(1)
     
     # Compter les images
@@ -38,10 +60,13 @@ def generate_atlases_ci(input_folder: str, output_folder: str):
     
     if not image_files:
         print("⚠️ Aucune image valide trouvée")
+        github_endgroup()
         sys.exit(1)
     
-    # Générer les atlas en utilisant la fonction refactorisée
-    atlas_data = generate_atlases(input_folder, output_folder)
+    # Générer les atlas en utilisant la fonction refactorisée avec callback
+    atlas_data = generate_atlases(input_folder, output_folder, progress_callback=progress_callback)
+    
+    github_endgroup()
     
     if not atlas_data:
         print("❌ Échec de la génération des atlas")
@@ -58,6 +83,8 @@ def generate_static_ci(atlas_folder: str, output_static_folder: str):
         atlas_folder: Dossier contenant les atlas générés
         output_static_folder: Dossier de sortie pour la version statique
     """
+    github_group("📦 Génération de la version statique")
+    
     # Ajouter le dossier parent au path
     sys.path.insert(0, str(Path(__file__).parent.parent))
     
@@ -71,12 +98,14 @@ def generate_static_ci(atlas_folder: str, output_static_folder: str):
     # Vérifier que le dossier d'atlas existe
     if not os.path.exists(atlas_folder):
         print(f"❌ Erreur: Le dossier '{atlas_folder}' n'existe pas!")
+        github_endgroup()
         sys.exit(1)
     
     json_file = Path(atlas_folder) / 'manifest.json'
     if not json_file.exists():
         print(f"❌ Erreur: Le fichier {json_file} n'existe pas")
         print("Les atlas n'ont probablement pas été générés correctement")
+        github_endgroup()
         sys.exit(1)
     
     # Charger les données atlas et ajouter les métadonnées CI/CD
@@ -140,8 +169,10 @@ def generate_static_ci(atlas_folder: str, output_static_folder: str):
     with open(json_file, 'w', encoding='utf-8') as f:
         json.dump(atlas_data, f, indent=2, ensure_ascii=False)
     
-    # Générer la version statique en utilisant la fonction refactorisée
-    result = generate_static_version(atlas_folder, output_static_folder)
+    # Générer la version statique en utilisant la fonction refactorisée avec callback
+    result = generate_static_version(atlas_folder, output_static_folder, progress_callback=progress_callback)
+    
+    github_endgroup()
     
     if not result:
         print("❌ Échec de la génération de la version statique")

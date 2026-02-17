@@ -2,19 +2,27 @@ import os
 import json
 from PIL import Image
 
-def generate_metadata(input_folder='input_images'):
+def generate_metadata(input_folder='input_images', progress_callback=None):
     """
     Génère ou met à jour le fichier manifest.json pour les images
     
     Args:
         input_folder: Dossier contenant les images
+        progress_callback: Fonction de callback pour la progression (step, total, message)
         
     Returns:
         dict: Les métadonnées générées ou None en cas d'erreur
     """
+    
+    def report_progress(step, total, message):
+        """Helper pour appeler le callback s'il existe"""
+        if progress_callback:
+            progress_callback(step, total, message)
     if not os.path.exists(input_folder):
         print(f"Le dossier {input_folder} n'existe pas.")
         return None
+    
+    report_progress(1, 4, "Chargement du manifest existant")
         
     # Vérifier qu'il existe un fichier manifest.json
     metadata_json = {"version": 1, "images": {}, "metadata": {}}
@@ -45,6 +53,8 @@ def generate_metadata(input_folder='input_images'):
     if not image_files:
         print(f"Aucune image trouvée dans le dossier {input_folder}")
         return
+    
+    report_progress(2, 4, f"Traitement de {len(image_files)} images")
     
     print(f"\nImages trouvées: {len(image_files)}")
     print("="*60)
@@ -94,6 +104,8 @@ def generate_metadata(input_folder='input_images'):
             if updated_entries > 0:
                 print(f"✓ Entrée mise à jour pour: {filename}")
     
+    report_progress(3, 4, "Sauvegarde du manifest")
+    
     # Sauvegarder le fichier JSON
     try:
         # Garder l'ordre existant et ajouter les nouvelles images à la fin
@@ -103,6 +115,8 @@ def generate_metadata(input_folder='input_images'):
         with open(manifest_file, 'w', encoding='utf-8') as file:
             json.dump(metadata_json, file, indent=2, ensure_ascii=False)
         print(f"\n✓ Métadonnées sauvegardées dans {manifest_file}")
+        
+        report_progress(4, 4, "Génération des métadonnées terminée")
         
         # Afficher un résumé
         total_images = len(images_metadata)
