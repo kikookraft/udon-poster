@@ -27,7 +27,7 @@ on:
       public:
         description: "Path to public assets folder in calling repository (overrides default Public folder)"
         required: false
-        default: ""
+        default: "."
         type: string
     outputs:
       page-url:
@@ -87,7 +87,10 @@ jobs:
       - name: Check for source images
         id: check_images
         run: |
-          INPUT_PATH="${{ inputs.input || 'images' }}"
+          INPUT_PATH="${{ inputs.input }}"
+          if [ -z "$INPUT_PATH" ]; then
+            INPUT_PATH="."
+          fi
           if [ -d "repo/$INPUT_PATH" ] && [ "$(ls -A repo/$INPUT_PATH 2>/dev/null | grep -v '.git' | grep -v 'README' | grep -v 'manifest.json')" ]; then
             echo "images_exist=true" >> $GITHUB_OUTPUT
             echo "✅ Images folder found with files in $INPUT_PATH"
@@ -101,7 +104,10 @@ jobs:
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
           cd generator/Generator
-          INPUT_PATH="${{ inputs.input || 'images' }}"
+          INPUT_PATH="${{ inputs.input }}"
+          if [ -z "$INPUT_PATH" ]; then
+            INPUT_PATH="."
+          fi
 
           echo "🎨 Generating atlases from source images..."
           python CI/generate_atlas_ci.py generate --input "../../repo/$INPUT_PATH" --output output_atlases
@@ -110,7 +116,10 @@ jobs:
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
           cd generator/Generator
-          INPUT_PATH="${{ inputs.input || 'images' }}"
+          INPUT_PATH="${{ inputs.input }}"
+          if [ -z "$INPUT_PATH" ]; then
+            INPUT_PATH="."
+          fi
           echo "📦 Generating static version for GitHub Pages..."
           python CI/generate_atlas_ci.py static --output output_atlases --static-output output_static
 
