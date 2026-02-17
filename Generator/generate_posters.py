@@ -343,21 +343,23 @@ class AtlasGenerator:
         
         return atlas_data
 
-def main():
-    """Fonction principale"""
-    # Configuration
-    input_folder = input("Dossier des images d'entrée (par défaut: 'input_images'): ").strip()
-    if not input_folder:
-        input_folder = "input_images"
+
+def main(input_folder='input_images', output_folder='output_atlases'):
+    """
+    Fonction principale pour générer les atlas
     
-    output_folder = input("Dossier de sortie (par défaut: 'output_atlases'): ").strip()
-    if not output_folder:
-        output_folder = "output_atlases"
+    Args:
+        input_folder: Dossier contenant les images sources
+        output_folder: Dossier de sortie pour les atlas
+        
+    Returns:
+        dict: Les données d'atlas générées ou None en cas d'erreur
+    """
     
     # Vérifier que le dossier d'entrée existe
     if not os.path.exists(input_folder):
         print(f"Erreur: Le dossier '{input_folder}' n'existe pas!")
-        return
+        return None
     
     # Créer le générateur d'atlas
     generator = AtlasGenerator(
@@ -385,6 +387,18 @@ def main():
         
         for scale, count in sorted(by_scale.items()):
             print(f"  - Downscale x{scale}: {count} atlas")
+    
+    return atlas_data
+
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Génère des atlas à partir d\'images sources')
+    parser.add_argument('--input', default='input_images',
+                       help='Dossier des images d\'entrée (par défaut: input_images)')
+    parser.add_argument('--output', default='output_atlases',
+                       help='Dossier de sortie pour les atlas (par défaut: output_atlases)')
+    
+    args = parser.parse_args()
+    main(args.input, args.output)

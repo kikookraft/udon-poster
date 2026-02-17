@@ -2,16 +2,19 @@ import os
 import json
 from PIL import Image
 
-def main():
-    """Fonction principale"""
-    # Configuration
-    input_folder = input("Dossier des images d'entrée (par défaut: 'input_images'): ").strip()
-    if not input_folder:
-        input_folder = "input_images"
+def generate_metadata(input_folder='input_images'):
+    """
+    Génère ou met à jour le fichier metadata.json pour les images
     
+    Args:
+        input_folder: Dossier contenant les images
+        
+    Returns:
+        dict: Les métadonnées générées ou None en cas d'erreur
+    """
     if not os.path.exists(input_folder):
         print(f"Le dossier {input_folder} n'existe pas.")
-        return
+        return None
         
     # Vérifier qu'il existe un fichier metadata.json
     metadata = {}
@@ -84,8 +87,23 @@ def main():
         print(f"  Total d'images: {total_images}")
         print(f"  Nouvelles entrées créées: {new_entries}")
         
+        return sorted_metadata
+        
     except Exception as e:
         print(f"Erreur lors de la sauvegarde: {e}")
+        return None
+
+
+def main():
+    """Fonction principale pour l'exécution en ligne de commande"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Génère ou met à jour le fichier metadata.json pour les images')
+    parser.add_argument('--input', default='input_images',
+                       help='Dossier des images d\'entrée (par défaut: input_images)')
+    
+    args = parser.parse_args()
+    generate_metadata(args.input)
 
 if __name__ == "__main__":
     main()

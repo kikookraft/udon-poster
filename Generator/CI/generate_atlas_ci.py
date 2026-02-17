@@ -19,7 +19,7 @@ def generate_atlases_ci(input_folder: str, output_folder: str):
     # Ajouter le dossier parent au path pour importer generate_posters
     sys.path.insert(0, str(Path(__file__).parent.parent))
     
-    from generate_posters import AtlasGenerator
+    from generate_posters import main as generate_atlases
     
     print(f"📂 Dossier d'entrée: {input_folder}")
     print(f"📂 Dossier de sortie: {output_folder}")
@@ -40,37 +40,14 @@ def generate_atlases_ci(input_folder: str, output_folder: str):
         print("⚠️ Aucune image valide trouvée")
         sys.exit(1)
     
-    # Créer le générateur d'atlas
-    generator = AtlasGenerator(
-        max_atlas_size=2048,
-        input_folder=input_folder,
-        output_folder=output_folder
-    )
+    # Générer les atlas en utilisant la fonction refactorisée
+    atlas_data = generate_atlases(input_folder, output_folder)
     
-    # Générer les atlas
-    atlas_data = generator.generate_atlases()
-    
-    # Afficher un résumé
-    if atlas_data:
-        print("\n✅ === RÉSUMÉ ===")
-        print(f"📊 Images traitées: {atlas_data['total_images']}")
-        print(f"📦 Atlas générés: {len(atlas_data['atlases'])}")
-        
-        # Grouper par niveau de downscale
-        by_scale = {}
-        for atlas in atlas_data['atlases']:
-            scale = atlas['scale']
-            if scale not in by_scale:
-                by_scale[scale] = 0
-            by_scale[scale] += 1
-        
-        for scale, count in sorted(by_scale.items()):
-            print(f"   - Downscale x{scale}: {count} atlas")
-        
-        return atlas_data
-    else:
+    if not atlas_data:
         print("❌ Échec de la génération des atlas")
         sys.exit(1)
+    
+    return atlas_data
 
 
 def generate_static_ci(atlas_folder: str, output_static_folder: str):
@@ -84,46 +61,30 @@ def generate_static_ci(atlas_folder: str, output_static_folder: str):
     # Ajouter le dossier parent au path
     sys.path.insert(0, str(Path(__file__).parent.parent))
     
-    # Charger les fonctions du script generate_static
-    with open(Path(__file__).parent.parent / 'generate_static.py', 'r', encoding='utf-8') as f:
-        exec(f.read(), globals())
+    from generate_static import generate_static_version
     
-    import json
-    import shutil
+    print(f"📂 Dossier d'atlas: {atlas_folder}")
+    print(f"📂 Dossier de sortie: {output_static_folder}")
     
-    atlas_folder = Path(atlas_folder)
-    output_static_folder = Path(output_static_folder)
-    output_static_folder.mkdir(exist_ok=True)
+    # Vérifier que le dossier d'atlas existe
+    if not os.path.exists(atlas_folder):
+        print(f"❌ Erreur: Le dossier '{atlas_folder}' n'existe pas!")
+        sys.exit(1)
     
-    json_file = atlas_folder / 'atlas_data.json'
-    
+    json_file = Path(atlas_folder) / 'atlas_data.json'
     if not json_file.exists():
         print(f"❌ Erreur: Le fichier {json_file} n'existe pas")
         print("Les atlas n'ont probablement pas été générés correctement")
         sys.exit(1)
     
-    # Charger les données JSON
-    with open(json_file, 'r', encoding='utf-8') as f:
-        atlas_data = json.load(f)
-    print(f"✅ Données JSON chargées depuis: {json_file}")
+    # Générer la version statique en utilisant la fonction refactorisée
+    result = generate_static_version(atlas_folder, output_static_folder)
     
-    # Compresser les données
-    compressed_data = compress_atlas_data(atlas_data)
+    if not result:
+        print("❌ Échec de la génération de la version statique")
+        sys.exit(1)
     
-    # Sauvegarder le JSON compressé
-    atlas_json_file = output_static_folder / 'atlas.json'
-    with open(atlas_json_file, 'w', encoding='utf-8') as f:
-        json.dump(compressed_data, f, indent=2, ensure_ascii=False)
-    print(f"✅ JSON compressé sauvegardé: {atlas_json_file}")
-    
-    # Copier et renommer les images
-    copied_files = copy_and_rename_images(atlas_folder, output_static_folder, atlas_data)
-    
-    print(f"\n✅ Version statique générée avec succès!")
-    print(f"📊 Statistiques:")
-    print(f"   - {len(copied_files)} images copiées")
-    print(f"   - {len(compressed_data['atlases'])} atlas")
-    print(f"   - {len(compressed_data['mapping'])} images dans le mapping")
+    return result
 
 
 if __name__ == '__main__':
