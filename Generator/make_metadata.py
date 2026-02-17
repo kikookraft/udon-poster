@@ -78,8 +78,9 @@ def generate_metadata(input_folder='input_images'):
     
     # Sauvegarder le fichier JSON
     try:
-        # Trier les métadonnées des images par nom de clé
-        metadata_json["images"] = dict(sorted(images_metadata.items()))
+        # Garder l'ordre existant et ajouter les nouvelles images à la fin
+        # Ne pas trier pour préserver l'ordre d'insertion
+        metadata_json["images"] = images_metadata
         
         with open(manifest_file, 'w', encoding='utf-8') as file:
             json.dump(metadata_json, file, indent=2, ensure_ascii=False)
