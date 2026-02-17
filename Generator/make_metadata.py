@@ -49,11 +49,29 @@ def generate_metadata(input_folder='input_images'):
     print(f"\nImages trouvées: {len(image_files)}")
     print("="*60)
     
+    # Créer un set des images existantes pour vérification rapide
+    existing_images = set(image_files)
+    
     # Traiter chaque image automatiquement
     new_entries = 0
     updated_entries = 0
+    missing_files = 0
     
     images_metadata = metadata_json["images"]
+    
+    # Vérifier les images dans le manifest qui n'existent plus
+    for filename in list(images_metadata.keys()):
+        if filename not in existing_images:
+            # Fichier manquant, ajouter un commentaire d'erreur
+            if "_comment" not in images_metadata[filename] or images_metadata[filename]["_comment"] != "ERROR: Image file not found":
+                images_metadata[filename]["_comment"] = "ERROR: Image file not found"
+                missing_files += 1
+                print(f"⚠️ Fichier manquant: {filename}")
+        else:
+            # Fichier existe, supprimer le commentaire d'erreur s'il y en a un
+            if "_comment" in images_metadata[filename] and images_metadata[filename]["_comment"] == "ERROR: Image file not found":
+                del images_metadata[filename]["_comment"]
+                print(f"✓ Fichier retrouvé: {filename}")
     
     for filename in image_files:
         # Créer ou mettre à jour l'entrée avec des valeurs vides par défaut
@@ -92,6 +110,8 @@ def generate_metadata(input_folder='input_images'):
         print(f"\nRÉSUMÉ:")
         print(f"  Total d'images: {total_images}")
         print(f"  Nouvelles entrées créées: {new_entries}")
+        if missing_files > 0:
+            print(f"  ⚠️ Fichiers manquants: {missing_files}")
         
         return metadata_json
         
