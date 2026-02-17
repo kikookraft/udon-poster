@@ -73,15 +73,12 @@ jobs:
           echo "📦 Génération de la version statique pour GitHub Pages..."
           python CI/generate_atlas_ci.py static --output output_atlases --static-output output_static
       
-      - name: Copy index.html and public assets
+      - name: Copy public assets to output
         run: |
-          echo "📄 Copie de index.html..."
-          cp main/index.html main/Generator/output_static/
-          
           echo "📄 Copie des assets publics..."
           if [ -d "public/public" ]; then
             cp -r public/public/* main/Generator/output_static/ 2>/dev/null || true
-            echo "✅ Assets publics copiés"
+            echo "✅ Assets publics copiés (incluant index.html)"
           else
             echo "⚠️ Aucun dossier public/public/ trouvé"
           fi
