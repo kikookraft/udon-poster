@@ -7,8 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.2] - 2026-02-16
 
+### Added
+- Dynamic HTML viewer (index.html) that fetches and displays atlas.json data
+  - Responsive gallery with image cards
+  - Real-time statistics display
+  - API endpoints documentation
+  - Modern gradient UI with backdrop blur effects
+- GitHub Pages deployment workflow integration
+  - Automatic atlas generation from source images
+  - Static version generation for deployment
+  - CI/CD metadata injection (commit SHA, workflow info, repository links)
+- SHA256 hash generation for cache optimization
+  - Image file hashing for integrity verification
+  - Atlas file hashing for cache-busting
+- Version tracking system (version: 1) in manifest and atlas files
+- Missing file detection with `_comment` error annotations
+- Command-line argument support (argparse) for all Python scripts
+  - make_metadata.py
+  - generate_posters.py
+  - generate_static.py
+
 ### Changed
-- Coverting package to use template created with `nappollen.packager`
+- Converting package to use template created with `nappollen.packager`
+- **BREAKING**: Renamed `metadata.json` to `manifest.json`
+- **BREAKING**: New manifest.json structure:
+  - `version`: Version number for format compatibility
+  - `images`: Image metadata (title, url, sha)
+  - `metadata`: Custom metadata object
+- **BREAKING**: Changed deployment branch from `images` to `public`
+- New repository structure:
+  - `public/images/`: Source images and manifest.json
+  - `public/public/`: Static assets (index.html, etc.)
+- Atlas.json now includes:
+  - `base_url`: GitHub Pages base URL
+  - `metadata.ci`: CI/CD information (commit, workflow, repository)
+  - SHA hashes for all images and atlases
+- Image insertion order is now preserved (no automatic sorting)
+- Workflow improvements:
+  - Separate checkouts for main and public branches
+  - Automatic asset copying from public/public/
+  - Enhanced error detection and reporting
+
+### Fixed
+- Workflow path filtering for proper triggering
+- Python script imports refactored for better modularity
+
+### Technical Details
+- All Python scripts now support both CLI and module import usage
+- Compressed atlas data includes custom metadata passthrough
+- GitHub Actions environment variables integration
+- Automatic migration support for legacy manifest structure
 
 ## [1.0.1] - 2025-08-05
 
@@ -63,3 +111,4 @@ Nothing yet, but future updates will focus on:
 - User feedback and feature requests
 - Performance enhancements
 - Compatibility with future VRChat SDK updates
+
