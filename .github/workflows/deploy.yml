@@ -7,7 +7,7 @@ on:
       input:
         description: "Path to images folder in calling repository"
         required: false
-        default: "images"
+        default: ""
         type: string
       pages:
         description: "Deploy to GitHub Pages"
