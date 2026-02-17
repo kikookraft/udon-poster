@@ -162,6 +162,86 @@ class AtlasViewer {
                 repoLink.target = '_blank';
             }
         }
+        
+        // Check for ongoing GitHub Actions
+        this.checkOngoingActions();
+    }
+
+    /**
+     * Check if there are ongoing GitHub Actions
+     */
+    async checkOngoingActions() {
+        const metadata = this.data.metadata;
+        if (!metadata || !metadata.ci || !metadata.ci.repository) {
+            return;
+        }
+        
+        try {
+            const repo = metadata.ci.repository.name; // format: "owner/repo"
+            const apiUrl = `https://api.github.com/repos/${repo}/actions/runs?status=in_progress&per_page=5`;
+            
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                console.log('Could not fetch GitHub Actions status');
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.workflow_runs && data.workflow_runs.length > 0) {
+                this.showActionInProgress(data.workflow_runs);
+            }
+        } catch (error) {
+            console.error('Error checking GitHub Actions:', error);
+        }
+    }
+
+    /**
+     * Show indicator for actions in progress
+     */
+    showActionInProgress(runs) {
+        const githubLink = document.getElementById('githubLink');
+        if (!githubLink) return;
+        
+        const svg = githubLink.querySelector('svg');
+        if (!svg) return;
+        
+        // Wrap SVG in a relative container
+        const wrapper = document.createElement('span');
+        wrapper.style.position = 'relative';
+        wrapper.style.display = 'inline-flex';
+        svg.parentNode.insertBefore(wrapper, svg);
+        wrapper.appendChild(svg);
+        
+        // Add a yellow dot badge
+        const badge = document.createElement('span');
+        badge.className = 'action-badge';
+        badge.title = `${runs.length} action(s) in progress`;
+        badge.style.cssText = `
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #f9c513;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        `;
+        
+        wrapper.appendChild(badge);
+        
+        // Add pulse animation if not exists
+        if (!document.getElementById('pulseAnimation')) {
+            const style = document.createElement('style');
+            style.id = 'pulseAnimation';
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     /**
