@@ -188,31 +188,19 @@ jobs:
           
           # Résumé consolidé unique
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          # 🎨 Atlas de Posters - Génération et Déploiement
-          
-          ## 📊 Statistiques
+
+          ## Statistiques
           
           - **Images traitées**: ${{ needs.generate-atlas.outputs.num_images }}
           - **Atlas générés**: ${{ needs.generate-atlas.outputs.num_atlases }}
           - **Niveaux de downscale**: ${{ needs.generate-atlas.outputs.downscales }}
-          - **Taille de l'archive**: ${{ needs.create-archive.outputs.zip_size }}
+          - **Taille de l'archive**: ${{ needs.create-archive.outputs.zip_size }}o
           
-          ## 🌐 Déploiement
+          ## Déploiement
           
           | Type | URL |
           |------|-----|
           | **🌍 Site web** | [$PAGE_URL]($PAGE_URL) |
           | **📄 API Atlas** | [${PAGE_URL}atlas.json](${PAGE_URL}atlas.json) |
           | **📦 Archive ZIP** | [Télécharger]($ARTIFACT_URL) |
-          
-          ## 🎮 Utilisation dans VRChat
-          
-          \`\`\`
-          Base URL: $PAGE_URL
-          Atlas API: ${PAGE_URL}atlas.json
-          \`\`\`
-          
-          ---
-          
-          ✅ **Tous les fichiers sont générés et déployés avec succès!**
           EOF
