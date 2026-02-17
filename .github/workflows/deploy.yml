@@ -1,24 +1,44 @@
 name: Generate Atlas for GitHub Pages
 
 on:
-  workflow_dispatch:  # Allows manual triggering
-  workflow_call:      # Allows this workflow to be reused by other repositories
+  workflow_dispatch: # Allows manual triggering
+  workflow_call: # Allows this workflow to be reused by other repositories
     inputs:
-      input-path:
-        description: 'Path to images folder in calling repository'
+      input:
+        description: "Path to images folder in calling repository"
         required: false
-        default: 'images'
+        default: "images"
+        type: string
+      pages:
+        description: "Deploy to GitHub Pages"
+        required: false
+        default: true
+        type: boolean
+      summary:
+        description: "Generate workflow summary"
+        required: false
+        default: true
+        type: boolean
+      archive:
+        description: "Create atlas archive"
+        required: false
+        default: true
+        type: boolean
+      public:
+        description: "Path to public assets folder in calling repository (overrides default Public folder)"
+        required: false
+        default: ""
         type: string
     outputs:
       page-url:
-        description: 'URL of the deployed GitHub Pages site'
+        description: "URL of the deployed GitHub Pages site"
         value: ${{ jobs.deploy-pages.outputs.page_url }}
       num-atlases:
-        description: 'Number of generated atlases'
-        value: ${{ jobs.generate-atlas.outputs.num_atlases }}
+        description: "Number of generated atlases"
+        value: ${{ jobs.generate.outputs.num_atlases }}
       num-images:
-        description: 'Number of processed images'
-        value: ${{ jobs.generate-atlas.outputs.num_images }}
+        description: "Number of processed images"
+        value: ${{ jobs.generate.outputs.num_images }}
 
 # Define permissions needed for GitHub Pages
 permissions:
@@ -32,14 +52,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  generate-atlas:
+  generate:
     name: Generate Atlas
     runs-on: ubuntu-latest
     outputs:
       num_atlases: ${{ steps.generate.outputs.num_atlases }}
       num_images: ${{ steps.generate.outputs.num_images }}
       downscales: ${{ steps.generate.outputs.downscales }}
-    
+
     steps:
       - name: Checkout generator code from nappollen/udon-poster
         uses: actions/checkout@v4
@@ -47,98 +67,110 @@ jobs:
           repository: nappollen/udon-poster
           ref: main
           path: generator
-      
+
       - name: Checkout current repository (images)
         uses: actions/checkout@v4
         with:
-          path: images-repo
+          path: repo
           fetch-depth: 0
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: "3.11"
+
       - name: Install Python dependencies
         run: |
           cd generator/Generator
           pip install -r requirements.txt
-      
+
       - name: Check for source images
         id: check_images
         run: |
-          INPUT_PATH="${{ inputs.input-path || 'images' }}"
-          if [ -d "images-repo/$INPUT_PATH" ] && [ "$(ls -A images-repo/$INPUT_PATH 2>/dev/null | grep -v '.git' | grep -v 'README' | grep -v 'manifest.json')" ]; then
+          INPUT_PATH="${{ inputs.input || 'images' }}"
+          if [ -d "repo/$INPUT_PATH" ] && [ "$(ls -A repo/$INPUT_PATH 2>/dev/null | grep -v '.git' | grep -v 'README' | grep -v 'manifest.json')" ]; then
             echo "images_exist=true" >> $GITHUB_OUTPUT
             echo "✅ Images folder found with files in $INPUT_PATH"
           else
             echo "images_exist=false" >> $GITHUB_OUTPUT
             echo "⚠️ No images found in $INPUT_PATH"
           fi
-      
+
       - name: Generate atlases from source images
         id: generate
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
           cd generator/Generator
-          INPUT_PATH="${{ inputs.input-path || 'images' }}"
-          
+          INPUT_PATH="${{ inputs.input || 'images' }}"
+
           echo "🎨 Generating atlases from source images..."
-          python CI/generate_atlas_ci.py generate --input "../../images-repo/$INPUT_PATH" --output output_atlases
-      
+          python CI/generate_atlas_ci.py generate --input "../../repo/$INPUT_PATH" --output output_atlases
+
       - name: Generate static version
         if: steps.check_images.outputs.images_exist == 'true'
         run: |
           cd generator/Generator
-          
+          INPUT_PATH="${{ inputs.input || 'images' }}"
           echo "📦 Generating static version for GitHub Pages..."
           python CI/generate_atlas_ci.py static --output output_atlases --static-output output_static
-      
+
       - name: Copy public assets to output
         run: |
           echo "📄 Copying public assets..."
-          if [ -d "images-repo/public" ]; then
-            cp -r images-repo/public/* generator/Generator/output_static/ 2>/dev/null || true
-            echo "✅ Public assets copied (including index.html)"
+          
+          # Copy default Public folder from generator
+          if [ -d "generator/Generator/Public" ]; then
+            cp -r generator/Generator/Public/* generator/Generator/output_static/ 2>/dev/null || true
+            echo "✅ Default Public assets copied"
           else
-            echo "⚠️ No public/ folder found"
+            echo "⚠️ No default Public/ folder found in generator"
           fi
-      
+          
+          # Override with custom public folder if specified
+          PUBLIC_PATH="${{ inputs.public }}"
+          if [ -n "$PUBLIC_PATH" ] && [ -d "repo/$PUBLIC_PATH" ]; then
+            cp -r repo/$PUBLIC_PATH/* generator/Generator/output_static/ 2>/dev/null || true
+            echo "✅ Custom public assets from $PUBLIC_PATH copied (overriding defaults)"
+          elif [ -n "$PUBLIC_PATH" ]; then
+            echo "⚠️ Custom public path specified ($PUBLIC_PATH) but folder not found"
+          fi
+
       - name: Upload static output
         uses: actions/upload-artifact@v4
         with:
-          name: atlas-static
+          name: static
           path: generator/Generator/output_static
-          retention-days: 1  # Temporary, only to pass between jobs
+          retention-days: 1 # Temporary, only to pass between jobs
 
   create-archive:
     name: Create Atlas Archive
-    needs: generate-atlas
+    needs: generate
     runs-on: ubuntu-latest
+    if: ${{ inputs.archive != false }}
     outputs:
       zip_size: ${{ steps.calculate_size.outputs.zip_size }}
-    
+
     steps:
       - name: Download static output
         uses: actions/download-artifact@v4
         with:
-          name: atlas-static
-          path: atlas-static
-      
+          name: static
+          path: static
+
       - name: Prepare atlas-only package
         run: |
           mkdir -p atlas-package
-          cp atlas-static/atlas.json atlas-package/
-          cp -r atlas-static/atlas atlas-package/
+          cp static/atlas.json atlas-package/
+          cp -r static/atlas atlas-package/
           echo "📦 Artifact content: atlas.json and atlas/ folder"
-      
+
       - name: Calculate size
         id: calculate_size
         run: |
           SIZE=$(du -sh atlas-package | cut -f1)
           echo "📦 Content size: $SIZE"
           echo "zip_size=$SIZE" >> $GITHUB_OUTPUT
-      
+
       - name: Upload Atlas artifact
         uses: actions/upload-artifact@v4
         with:
@@ -148,33 +180,34 @@ jobs:
 
   deploy-pages:
     name: Deploy to GitHub Pages
-    needs: generate-atlas
+    needs: generate
+    if: ${{ inputs.pages != false }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
       - name: Download static output
         uses: actions/download-artifact@v4
         with:
-          name: atlas-static
+          name: static
           path: static-output
-      
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: static-output
-      
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      
+
       - name: Display deployment info
         run: |
           echo "🎉 Deployment successful!"
@@ -182,10 +215,10 @@ jobs:
 
   summary:
     name: Generate Summary
-    needs: [generate-atlas, create-archive, deploy-pages]
+    needs: [generate, create-archive, deploy-pages]
     runs-on: ubuntu-latest
-    if: always()
-    
+    if: ${{ always() && inputs.summary != false }}
+
     steps:
       - name: Get artifact URL
         id: artifact_url
@@ -195,24 +228,24 @@ jobs:
             | jq -r '.artifacts[] | select(.name=="atlas") | "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/\(.id)"')
           echo "url=$ARTIFACT_URL" >> $GITHUB_OUTPUT
           echo "📦 Artifact URL: $ARTIFACT_URL"
-      
+
       - name: Create consolidated summary
         run: |
           PAGE_URL="${{ needs.deploy-pages.outputs.page_url }}"
           ARTIFACT_URL="${{ steps.artifact_url.outputs.url }}"
-          
+
           # Single consolidated summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
 
           ## Statistics
-          
-          - **Processed images**: ${{ needs.generate-atlas.outputs.num_images }}
-          - **Generated atlases**: ${{ needs.generate-atlas.outputs.num_atlases }}
-          - **Downscale levels**: ${{ needs.generate-atlas.outputs.downscales }}
+
+          - **Processed images**: ${{ needs.generate.outputs.num_images }}
+          - **Generated atlases**: ${{ needs.generate.outputs.num_atlases }}
+          - **Downscale levels**: ${{ needs.generate.outputs.downscales }}
           - **Archive size**: ${{ needs.create-archive.outputs.zip_size }}B
-          
+
           ## Deployment
-          
+
           | Type | URL |
           |------|-----|
           | **🌍 Website** | [$PAGE_URL]($PAGE_URL) |
